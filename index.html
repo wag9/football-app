@@ -35,7 +35,8 @@
   <table id="table"></table>
 
 <script>
-const API = "http://127.0.0.1:8000";
+const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
+const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
 
 async function loadTeams() {
   const res = await fetch(API + "/");
