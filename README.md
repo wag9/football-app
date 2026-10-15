@@ -33,6 +33,8 @@ never overwritten. Results are compared against the bookmaker.
 - Probabilities in the 0.7-0.8 range were overconfident in calibration checks.
 
 ## Run locally
+```
 pip install -r requirements.txt
 uvicorn api:app --reload
-# then open index.html
+```
+Then open `index.html` in your browser.
