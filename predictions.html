@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prediction history</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 30px auto; padding: 0 15px; background: #111; color: #eee; }
+    h1 { margin-bottom: 8px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 6px 8px; text-align: center; border-bottom: 1px solid #333; }
+    td.team { text-align: left; }
+    td.top { font-weight: bold; background: #1f3a1f; }
+    #summary { margin: 6px 0 14px; color: #aaa; }
+    a { color: #8ab4f8; }
+  </style>
+</head>
+<body>
+  <a href="index.html">← Back</a>
+  <h1>Prediction history</h1>
+  <div id="summary"></div>
+  <table id="fixtures"></table>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+async function loadFixtures() {
+  const res = await fetch(API + "/fixtures");
+  const rows = await res.json();
+  const keyOf = { H: "home", D: "draw", A: "away" };
+  let hits = 0, played = 0;
+
+  let html = "<tr><th>Date</th><th>Match</th><th>H</th><th>D</th><th>A</th><th>Score</th><th></th></tr>";
+  for (const r of rows.reverse()) {                    // latest first
+    const p = r.prob;
+    const top = Object.keys(p).reduce((a, b) => (p[a] >= p[b] ? a : b));
+    let mark = "";
+    if (r.played) {
+      played++;
+      if (keyOf[r.result] === top) { hits++; mark = "✅"; } else { mark = "❌"; }
+    }
+    const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
+    html += `<tr><td>${r.date}</td><td class="team">${r.home} vs ${r.away}</td>
+             ${cell("home")}${cell("draw")}${cell("away")}
+             <td>${r.score ?? "-"}</td><td>${mark}</td></tr>`;
+  }
+  document.getElementById("fixtures").innerHTML = html;
+  document.getElementById("summary").textContent =
+    played ? `Top pick correct: ${hits}/${played} (a draw always counts as a miss)` : "No results yet.";
+}
+
+loadFixtures();
+</script>
+</body>
+</html>

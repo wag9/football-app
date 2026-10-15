@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Football Predictor</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 30px auto; padding: 0 15px; background: #111; color: #eee; }
+    h1, h2 { margin-bottom: 8px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 6px 8px; text-align: center; border-bottom: 1px solid #333; }
+    td.team { text-align: left; }
+    td.top { font-weight: bold; background: #1f3a1f; }
+    select, button { padding: 6px; margin-right: 6px; }
+    #summary { margin: 6px 0; color: #aaa; }
+    a { color: #8ab4f8; }
+    .bar { display: flex; height: 26px; margin-top: 10px; border-radius: 4px; overflow: hidden; }
+    .bar div { display: flex; align-items: center; justify-content: center; font-size: 13px; color: #000; }
+    .h { background: #4caf50; } .d { background: #bbb; } .a { background: #f44336; }
+  </style>
+</head>
+<body>
+  <h1>Premier League</h1>
+
+  <h2>Predict a match</h2>
+  <select id="home"></select> vs <select id="away"></select>
+  <button onclick="predict()">Predict</button>
+  <div id="result"></div>
+
+  <h2>Upcoming matches</h2>
+  <div id="summary"></div>
+  <table id="fixtures"></table>
+
+  <h2>Table 2026/27</h2>
+  <table id="table"></table>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+async function loadTeams() {
+  const res = await fetch(API + "/");
+  const data = await res.json();
+  for (const id of ["home", "away"]) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = data.teams.map(t => `<option>${t}</option>`).join("");
+  }
+  document.getElementById("away").selectedIndex = 1;
+}
+
+async function predict() {
+  const home = document.getElementById("home").value;
+  const away = document.getElementById("away").value;
+  const out = document.getElementById("result");
+  if (home === away) {
+    out.textContent = "Please choose two different teams.";
+    return;
+  }
+  const res = await fetch(`${API}/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`);
+  const d = await res.json();
+  if (!res.ok) { out.textContent = d.detail; return; }
+  const p = d.prob;
+  out.innerHTML = `
+    <p>${d.home} (${d.elo_home}) vs ${d.away} (${d.elo_away})</p>
+    <div class="bar">
+      <div class="h" style="width:${p.home * 100}%">${Math.round(p.home * 100)}%</div>
+      <div class="d" style="width:${p.draw * 100}%">${Math.round(p.draw * 100)}%</div>
+      <div class="a" style="width:${p.away * 100}%">${Math.round(p.away * 100)}%</div>
+    </div>`;
+}
+
+async function loadUpcoming() {
+  const [fxRes, recRes] = await Promise.all([
+    fetch(API + "/fixtures?status=upcoming"),
+    fetch(API + "/record"),
+  ]);
+  const rows = (await fxRes.json()).slice(0, 10);     // next 10 only
+  const rec = await recRes.json();
+
+  let html = "<tr><th>Date</th><th>Match</th><th>H</th><th>D</th><th>A</th></tr>";
+  for (const r of rows) {
+    const p = r.prob;
+    const top = Object.keys(p).reduce((a, b) => (p[a] >= p[b] ? a : b));
+    const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
+    html += `<tr><td>${r.date}</td><td class="team">${r.home} vs ${r.away}</td>
+             ${cell("home")}${cell("draw")}${cell("away")}</tr>`;
+  }
+  document.getElementById("fixtures").innerHTML =
+    rows.length ? html : "<tr><td>No upcoming matches logged yet.</td></tr>";
+  document.getElementById("summary").innerHTML =
+    `Track record: ${rec.top_pick_correct}/${rec.played} top picks correct · <a href="predictions.html">Full history</a>`;
+}
+
+async function loadTable() {
+  const res = await fetch(API + "/table");
+  const rows = await res.json();
+  let html = "<tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>";
+  for (const r of rows) {
+    html += `<tr><td>${r.Pos}</td><td class="team">${r.Team}</td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GD}</td><td><b>${r.Pts}</b></td></tr>`;
+  }
+  document.getElementById("table").innerHTML = html;
+}
+
+loadUpcoming();
+loadTeams();
+loadTable();
+</script>
+</body>
+</html>
