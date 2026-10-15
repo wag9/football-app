@@ -1,4 +1,5 @@
 # Premier League Match Predictor
+![Front page](docs/screenshot.png)
 
 Elo-based Home/Draw/Away probability model for the Premier League,
 with a FastAPI backend, a plain HTML/JS frontend, and a public log
