@@ -6,13 +6,16 @@ of locked-in predictions.
 
 ## Results (walk-forward validation, test seasons 2023/24 to 2025/26)
 
-| Model | Avg log loss |
+| Model | Avg log loss (3 folds) |
 |---|---|
 | Uniform guess | 1.0986 |
-| Class-frequency baseline | ~1.08 |
-| Rolling-form features (12) | ~1.02 |
-| **Elo only (K=30, home adv=75)** | **0.983** |
-| Bookmaker average odds | ~0.97 |
+| Class-frequency baseline | 1.0736 |
+| **Elo only (K=30, home adv=75)** | **0.9831** |
+| Bookmaker average odds | 0.9660 |
+
+Lower is better. The model closes about 84% of the gap between the baseline and
+the bookmaker. An earlier model using 12 rolling-form features scored ~1.02 on a
+different 2-season split and is not directly comparable.
 
 ## Approach
 - Elo ratings updated match by match; the rating *before* each match is used as the feature (no leakage).
