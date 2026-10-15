@@ -1,4 +1,4 @@
-# main.py -- experiments aur validation
+# main.py -- experiments and validation
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -33,7 +33,7 @@ away["Venue"] = "Away"
 
 team_df = pd.concat([home, away]).sort_values(["Team", "Date"]).reset_index(drop=True)
 
-# 3. Rolling-5 form (shift(1) = leakage nahi)
+# 3. Rolling-5 form (shift(1) = no leakage)
 for col in ["Pts", "GF", "GA"]:
     team_df[f"roll_{col.lower()}"] = team_df.groupby("Team")[col].transform(
         lambda x: x.shift(1).rolling(window=5, min_periods=1).mean()
@@ -78,7 +78,7 @@ df["gf_diff"] = df["home_roll_gf"] - df["away_roll_gf"]
 df["ga_diff"] = df["home_roll_ga"] - df["away_roll_ga"]
 df["ppg_diff"] = df["home_ppg"] - df["away_ppg"]
 
-# 7. Base table (rows hamesha same rahein, isliye dropna purane 12 features pe)
+# 7. Base table (same rows every run, so dropna uses the 12 old features)
 old_feature_cols = [
     "home_roll_pts", "away_roll_pts",
     "home_ppg", "away_ppg",
@@ -95,9 +95,9 @@ base_df = (
 )
 
 
-# 8. Helpers
+# 8. Helpers (all functions are defined BEFORE they are called below)
 def add_elo(base, **elo_kwargs):
-    """base_df mein elo_diff jodo. Elo poore df pe chalta hai (saare matches chahiye)."""
+    """Add elo_diff to base_df. Elo runs on the full df (it needs every match)."""
     elo = add_elo_features(df, **elo_kwargs)[["Date", "HomeTeam", "AwayTeam", "elo_diff"]]
     return base.merge(elo, on=["Date", "HomeTeam", "AwayTeam"], how="left")
 
@@ -135,19 +135,38 @@ def calibration(data, cols):
     print(table.round(3))
 
 
+def benchmark(data):
+    """Per-fold log loss of the class-frequency baseline and the bookmaker."""
+    base, book = [], []
+    for start, end in FOLDS:
+        tr = data["Date"] < pd.Timestamp(start)
+        te = (data["Date"] >= pd.Timestamp(start)) & (data["Date"] < pd.Timestamp(end))
+        y_tr, y_te = data.loc[tr, "target"], data.loc[te, "target"]
+        props = y_tr.value_counts(normalize=True).reindex(LABELS).values
+        base.append(log_loss(y_te, np.tile(props, (len(y_te), 1)), labels=LABELS))
+        raw = 1 / data.loc[te, ["AvgA", "AvgD", "AvgH"]].values
+        book.append(log_loss(y_te, raw / raw.sum(axis=1, keepdims=True), labels=LABELS))
+    return base, book
+
+
 # 9. Final model validation
 print("VERSION: FINAL elo_only, K=30, home_adv=75, nts=1400, full history")
 print("rows:", len(base_df))
 data = add_elo(base_df, k=K, home_adv=HOME_ADV, new_team_start=NEW_START)
+
 sc = walk_forward(data, ["elo_diff"])
 print(f"folds: {[round(s, 4) for s in sc]} | avg: {np.mean(sc):.4f}")
 
-# 10. Calibration (dekhna ho toh False ko True karo)
+base, book = benchmark(data)
+print(f"baseline folds : {[round(s, 4) for s in base]} | avg: {np.mean(base):.4f}")
+print(f"bookmaker folds: {[round(s, 4) for s in book]} | avg: {np.mean(book):.4f}")
+
+# 10. Calibration (set to True to run)
 RUN_CALIBRATION = False
 if RUN_CALIBRATION:
     print("\n" + "=" * 40)
     calibration(data, ["elo_diff"])
 
-# 11. Naya experiment yahan likho:
+# 11. New experiments go here:
 # data2 = add_elo(base_df, k=40, home_adv=HOME_ADV, new_team_start=NEW_START)
 # print(walk_forward(data2, ["elo_diff"]))
