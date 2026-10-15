@@ -27,6 +27,13 @@ extra rolling-form features, a draw-specific feature.
 Predictions are written to `data/predictions_log.csv` before kickoff and
 never overwritten. Results are compared against the bookmaker.
 
+## Weekly workflow
+1. After a matchweek: download the latest `prem2627.csv` from football-data.co.uk into `data/`.
+2. `python combine.py` rebuilds `data/all_matches.csv`.
+3. `python check.py` scores earlier predictions against actual results.
+4. Before the next matchweek: update `data/fixtures.csv`, then run `python upcoming.py` to log new predictions.
+5. Restart the API (`uvicorn api:app --reload`) so ratings are retrained on the new data.
+
 ## Limitations
 - The model trails bookmaker odds, which include lineups and injuries.
 - Draw probability never exceeds ~27%, so draws are never the top pick.
