@@ -21,6 +21,7 @@
 </head>
 <body>
   <h1>Premier League</h1>
+  <p id="status" style="color:#aaa">Loading data... the first load can take up to a minute while the server wakes up.</p>
 
   <h2>Predict a match</h2>
   <select id="home"></select> vs <select id="away"></select>
@@ -104,6 +105,7 @@ async function loadTable() {
 loadUpcoming();
 loadTeams();
 loadTable();
+document.getElementById("status").style.display = "none";
 </script>
 </body>
 </html>
