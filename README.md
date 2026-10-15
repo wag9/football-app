@@ -26,6 +26,7 @@ different 2-season split and is not directly comparable.
 ## What did not help (tested, flat or worse)
 Longer history, mean reversion between seasons, margin-of-victory Elo,
 extra rolling-form features, a draw-specific feature.
+Full experiment log: [results.md](results.md)
 
 ## Live prediction log
 Predictions are written to `data/predictions_log.csv` before kickoff and
