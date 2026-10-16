@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss
-
 from data import load_matches
 from elo import add_elo_features
+from poisson import walk_forward_poisson
 
 LABELS = ["A", "D", "H"]
 FOLDS = [
@@ -167,6 +167,10 @@ if RUN_CALIBRATION:
     print("\n" + "=" * 40)
     calibration(data, ["elo_diff"])
 
-# 11. New experiments go here:
-# data2 = add_elo(base_df, k=40, home_adv=HOME_ADV, new_team_start=NEW_START)
-# print(walk_forward(data2, ["elo_diff"]))
+# 11. Poisson attack/defence model vs Elo
+print("\n" + "=" * 40)
+print("VERSION: Poisson attack/defence, independent goals, halflife 730d, refit every 28d")
+for alpha in [0.003, 0.01, 0.03]:
+    sc_p, probs = walk_forward_poisson(df, base_df, FOLDS, alpha=alpha)
+    print(f"alpha={alpha} | folds: {[round(s, 4) for s in sc_p]} | avg: {np.mean(sc_p):.4f}"
+          f" | draw min/mean/max: {probs[:, 1].min():.3f}/{probs[:, 1].mean():.3f}/{probs[:, 1].max():.3f}")

@@ -47,3 +47,9 @@ Average log loss 0.9831, baseline 1.0736, bookmaker 0.9660.
 First 10 locked predictions (matchweek of 10 Oct 2026): model log loss 1.0944,
 bookmaker 1.0212, top-pick accuracy 5/10. Far too small a sample to conclude
 anything; the log is being extended weekly.
+
+## Poisson attack/defence (independent goals, halflife 730d, refit 28d)
+alpha 0.003: 0.9929 | 0.01: 0.9955 | 0.03: 1.0037 (Elo: 0.9831)
+Folds (alpha 0.003): [0.9324, 1.0138, 1.0326]. Equal to Elo in folds 1 and 3, much worse in fold 2 (+0.029).
+Draw max 0.315 at alpha 0.003. Fold 3 had 380 rows vs 374 (row-set mismatch).
+Result: worse than Elo, not adopted.
