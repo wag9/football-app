@@ -27,12 +27,14 @@ different 2-season split and is not directly comparable.
 - Logistic regression on the Elo difference.
 - Walk-forward validation by season, never random splits.
 - Team pages: Elo rating and rank, form, season results, Elo history chart, and logged predictions per team.
+- Elo + rolling shots-on-target net diff (walk-forward log loss 0.9776 vs 0.9831 Elo only)
 
 ## What did not help (tested, flat or worse)
 Longer history, mean reversion between seasons, margin-of-victory Elo,
 extra rolling-form features, a draw-specific feature.
 Full experiment log: [results.md](results.md)
 Poisson attack/defence model with time decay (avg log loss 0.9929 vs Elo 0.9831).
+Total shots and corners on top of shots-on-target (0.9774 / 0.9791 vs 0.9776).
 
 ## Live prediction log
 Predictions are written to `data/predictions_log.csv` before kickoff and

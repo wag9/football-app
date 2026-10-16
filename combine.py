@@ -5,7 +5,7 @@ seasons = [f"{a:02d}{a+1:02d}" for a in range(3, 27)]
 # 0304, 0405, ... 2425, 2526, 2627
 
 base_cols = ["Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
-shot_cols = ["HS", "AS", "HST", "AST"]
+shot_cols = ["HS", "AS", "HST", "AST", "HC", "AC"]
 odds_options = [("AvgH", "AvgD", "AvgA"), ("BbAvH", "BbAvD", "BbAvA"), ("B365H", "B365D", "B365A")]
 
 
@@ -45,7 +45,7 @@ for s in seasons:
     d["Date"] = pd.to_datetime(d["Date"], dayfirst=True, format="mixed")
     d["season"] = s
     print(d.shape, "NaT:", d["Date"].isna().sum(), "| odds:", odds_used,
-          "| HST missing:", d["HST"].isna().sum())
+          "| HST missing:", d["HST"].isna().sum()),"| HC missing:", d["HC"].isna().sum()
     frames.append(d)
 
 all_matches = pd.concat(frames, ignore_index=True)

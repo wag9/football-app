@@ -167,13 +167,13 @@ if RUN_CALIBRATION:
     print("\n" + "=" * 40)
     calibration(data, ["elo_diff"])
 
-# 11. Poisson attack/defence model vs Elo
-print("\n" + "=" * 40)
-print("VERSION: Poisson attack/defence, independent goals, halflife 730d, refit every 28d")
-for alpha in [0.003, 0.01, 0.03]:
-    sc_p, probs = walk_forward_poisson(df, base_df, FOLDS, alpha=alpha)
-    print(f"alpha={alpha} | folds: {[round(s, 4) for s in sc_p]} | avg: {np.mean(sc_p):.4f}"
-          f" | draw min/mean/max: {probs[:, 1].min():.3f}/{probs[:, 1].mean():.3f}/{probs[:, 1].max():.3f}")
+# # 11. Poisson attack/defence model vs Elo
+# print("\n" + "=" * 40)
+# print("VERSION: Poisson attack/defence, independent goals, halflife 730d, refit every 28d")
+# for alpha in [0.003, 0.01, 0.03]:
+#     sc_p, probs = walk_forward_poisson(df, base_df, FOLDS, alpha=alpha)
+#     print(f"alpha={alpha} | folds: {[round(s, 4) for s in sc_p]} | avg: {np.mean(sc_p):.4f}"
+#           f" | draw min/mean/max: {probs[:, 1].min():.3f}/{probs[:, 1].mean():.3f}/{probs[:, 1].max():.3f}")
 
 # 12. Shots-on-target features on top of Elo
 print("\n" + "=" * 40)
@@ -207,3 +207,41 @@ sc_e = walk_forward(d12, ["elo_diff"])
 sc_s = walk_forward(d12, ["elo_diff", "sot_diff"])
 print(f"Elo only      : {[round(s, 4) for s in sc_e]} | avg: {np.mean(sc_e):.4f}")
 print(f"Elo + SoT diff: {[round(s, 4) for s in sc_s]} | avg: {np.mean(sc_s):.4f}")
+
+# 13. Total shots and corners on top of Elo + SoT
+print("\n" + "=" * 40)
+print("VERSION: Elo + SoT10, then + total-shots net / + corners net (rolling-10, x100)")
+
+d13 = add_elo(base_df, k=K, home_adv=HOME_ADV, new_team_start=NEW_START)
+d13 = d13.merge(
+    d12[["Date", "HomeTeam", "AwayTeam", "sot_diff"]],
+    on=["Date", "HomeTeam", "AwayTeam"], how="left")
+
+
+def net_feature(hc, ac):
+    """Rolling-10 mean of (own - opponent) for a stat, home minus away. shift(1) = no leakage."""
+    h = pd.DataFrame({"Date": df["Date"], "Team": df["HomeTeam"], "net": df[hc] - df[ac]})
+    a = pd.DataFrame({"Date": df["Date"], "Team": df["AwayTeam"], "net": df[ac] - df[hc]})
+    st = pd.concat([h, a]).sort_values(["Team", "Date"]).reset_index(drop=True)
+    st["roll"] = st.groupby("Team")["net"].transform(
+        lambda x: x.shift(1).rolling(window=10, min_periods=3).mean())
+    out = d13[["Date", "HomeTeam", "AwayTeam"]]
+    out = out.merge(st[["Date", "Team", "roll"]].rename(columns={"Team": "HomeTeam", "roll": "h"}),
+                    on=["Date", "HomeTeam"], how="left")
+    out = out.merge(st[["Date", "Team", "roll"]].rename(columns={"Team": "AwayTeam", "roll": "a"}),
+                    on=["Date", "AwayTeam"], how="left")
+    return ((out["h"] - out["a"]).fillna(0) * 100).values
+
+
+d13["shots_diff"] = net_feature("HS", "AS")
+d13["corner_diff"] = net_feature("HC", "AC")
+print("rows:", len(d13),
+      "| shots nonzero:", (d13["shots_diff"] != 0).mean().round(3),
+      "| corners nonzero:", (d13["corner_diff"] != 0).mean().round(3))
+
+base_cols13 = ["elo_diff", "sot_diff"]
+for label, cols in [("Elo + SoT (baseline)", base_cols13),
+                    ("+ total shots", base_cols13 + ["shots_diff"]),
+                    ("+ corners", base_cols13 + ["corner_diff"])]:
+    sc = walk_forward(d13, cols)
+    print(f"{label:22s}: {[round(s, 4) for s in sc]} | avg: {np.mean(sc):.4f}")

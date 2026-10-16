@@ -63,3 +63,8 @@ Feature: rolling mean of (SoT for - SoT against), shift(1), min_periods=3, NaN->
 Window 5: 0.9795 | 10: 0.9776 | 20: 0.9786 (Elo only: 0.9831).
 All windows beat Elo; window 10 improved all 3 folds ([0.9256, 0.9812, 1.0260]).
 Adopted window 10 (middle value, no further tuning).
+
+## Total shots and corners on top of Elo + SoT (data 2003+)
+Baseline Elo + SoT10: 0.9776. + total shots net (rolling-10): 0.9774 (-0.0002). + corners net: 0.9791 (+0.0015).
+Folds, shots: [0.9235, 0.9803, 1.0283]; corners: [0.9257, 0.9844, 1.0272].
+SoT already captures the shot information (total shots contains SoT). Neither adopted.
