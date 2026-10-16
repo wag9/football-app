@@ -6,6 +6,7 @@ from model import train, predict_match
 from table import league_table
 from fastapi.middleware.cors import CORSMiddleware
 from team_page import team_summary
+from match_page import match_summary
 
 
 app = FastAPI(title="Football Predictor")
@@ -90,5 +91,12 @@ def record():
 def team(name: str):
     try:
         return team_summary(state, name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/match")
+def match(home: str, away: str, date: str = None):
+    try:
+        return match_summary(state, home, away, date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

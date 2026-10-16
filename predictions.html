@@ -32,7 +32,7 @@ async function loadFixtures() {
   const keyOf = { H: "home", D: "draw", A: "away" };
   let hits = 0, played = 0;
 
-  let html = "<tr><th>Date</th><th>Match</th><th>H</th><th>D</th><th>A</th><th>Score</th><th></th></tr>";
+  let html = "<tr><th>Date</th><th>Match</th><th>H</th><th>D</th><th>A</th><th>Score</th><th></th><th></th></tr>";
   for (const r of rows.reverse()) {                    // latest first
     const p = r.prob;
     const top = Object.keys(p).reduce((a, b) => (p[a] >= p[b] ? a : b));
@@ -44,7 +44,7 @@ async function loadFixtures() {
     const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
     html += `<tr><td>${r.date}</td><td class="team">${tl(r.home)} vs ${tl(r.away)}</td>
              ${cell("home")}${cell("draw")}${cell("away")}
-             <td>${r.score ?? "-"}</td><td>${mark}</td></tr>`;
+             <td>${r.score ?? "-"}<td>${mark}</td><td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}">Details</a></td></tr>`;
   }
   document.getElementById("fixtures").innerHTML = html;
   document.getElementById("summary").textContent =

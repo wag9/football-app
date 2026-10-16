@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Match preview</title>
+<style>
+  body { background:#0f1115; color:#e6e6e6; font-family:system-ui,sans-serif; max-width:820px; margin:0 auto; padding:24px 16px; }
+  a { color:#6ea8fe; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  h1 { margin:8px 0 4px; }
+  h2 { margin-top:32px; font-size:1.1rem; color:#9aa4b2; text-transform:uppercase; letter-spacing:.05em; }
+  .muted { color:#9aa4b2; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+  .card { background:#171a21; border:1px solid #262b36; border-radius:10px; padding:12px 16px; min-width:130px; }
+  .card .v { font-size:1.4rem; font-weight:600; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #262b36; font-size:.95rem; }
+  .form { display:flex; gap:6px; margin:8px 0 14px; }
+  .pill { width:30px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#0f1115; }
+  .W { background:#4ade80; } .D { background:#facc15; } .L { background:#f87171; }
+  .bar { display:flex; height:30px; margin-top:14px; border-radius:6px; overflow:hidden; }
+  .bar div { display:flex; align-items:center; justify-content:center; font-size:14px; color:#000; }
+  .bh { background:#4caf50; } .bd { background:#bbb; } .ba { background:#f44336; }
+  #status { margin-top:16px; }
+</style>
+</head>
+<body>
+<a href="index.html">&larr; Back</a>
+<div id="status" class="muted">Loading... (the first request can take ~30s while the free server wakes up)</div>
+<div id="content" style="display:none">
+  <h1 id="title"></h1>
+  <div class="muted" id="sub"></div>
+  <div class="bar" id="bar"></div>
+  <div class="muted" id="pickinfo" style="margin-top:6px"></div>
+  <div class="cards" id="cards"></div>
+
+  <h2>Recent form</h2>
+  <div id="formHome"></div>
+  <div id="formAway"></div>
+
+  <h2>Head to head</h2>
+  <div class="muted" id="h2hSummary"></div>
+  <table id="h2h"></table>
+</div>
+
+<script>
+const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
+const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
+
+function el(tag, text, cls) {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+}
+function row(table, cells, header) {
+  const tr = document.createElement("tr");
+  cells.forEach(c => {
+    const td = el(header ? "th" : "td");
+    if (c instanceof Node) td.appendChild(c); else td.textContent = c;
+    tr.appendChild(td);
+  });
+  table.appendChild(tr);
+}
+function teamLink(name) {
+  const a = el("a", name);
+  a.href = "team.html?name=" + encodeURIComponent(name);
+  return a;
+}
+function sot(v) { return v === null ? "n/a" : (v > 0 ? "+" : "") + v; }
+
+function formBlock(id, team, matches) {
+  const box = document.getElementById(id);
+  const t = el("div"); t.appendChild(teamLink(team)); box.appendChild(t);
+  const f = el("div", undefined, "form");
+  matches.forEach(m => {
+    const p = el("div", m.result, "pill " + m.result);
+    p.title = `${m.venue} vs ${m.opponent} ${m.gf}-${m.ga}`;
+    f.appendChild(p);
+  });
+  box.appendChild(f);
+}
+
+async function load() {
+  const q = new URLSearchParams(location.search);
+  const home = q.get("home"), away = q.get("away"), date = q.get("date");
+  const status = document.getElementById("status");
+  if (!home || !away) { status.textContent = "No match selected."; return; }
+  try {
+    let url = `${API}/match?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`;
+    if (date) url += "&date=" + encodeURIComponent(date);
+    const res = await fetch(url);
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      status.textContent = e.detail || "Match not found.";
+      return;
+    }
+    const d = await res.json();
+    document.title = `${d.home} vs ${d.away}`;
+    document.getElementById("title").textContent = `${d.home} vs ${d.away}`;
+    document.getElementById("sub").textContent =
+      (d.date || "") + (d.result ? "  ·  Final score " + d.result : "");
+
+    const p = d.logged ? d.logged.prob : d.prob;
+    const bar = document.getElementById("bar");
+    [["bh", p.home], ["bd", p.draw], ["ba", p.away]].forEach(([c, v]) => {
+      const s = el("div", Math.round(v * 100) + "%");
+      s.className = c; s.style.width = (v * 100) + "%";
+      bar.appendChild(s);
+    });
+    document.getElementById("pickinfo").textContent = d.logged
+      ? `Locked prediction (${d.logged.model || "model n/a"}, logged ${d.logged.logged_on || "n/a"}). Home / Draw / Away.`
+      : (d.result ? "Estimate uses current ratings (after this match). Home / Draw / Away."
+                  : "Current model estimate, not locked yet. Home / Draw / Away.");
+
+    const cards = document.getElementById("cards");
+    [[`${d.home} Elo`, `${d.elo_home} (#${d.rank_home})`],
+     [`${d.away} Elo`, `${d.elo_away} (#${d.rank_away})`],
+     [`${d.home} SoT net`, sot(d.sot_home)],
+     [`${d.away} SoT net`, sot(d.sot_away)]].forEach(([k, v]) => {
+      const c = el("div", undefined, "card");
+      c.appendChild(el("div", k, "muted"));
+      c.appendChild(el("div", String(v), "v"));
+      cards.appendChild(c);
+    });
+
+    formBlock("formHome", d.home, d.form_home);
+    formBlock("formAway", d.away, d.form_away);
+
+    const h = d.h2h;
+    const t = document.getElementById("h2h");
+    if (h.matches.length === 0) {
+      document.getElementById("h2hSummary").textContent = "No recent meetings in the data.";
+    } else {
+      document.getElementById("h2hSummary").textContent =
+        `Last ${h.matches.length}: ${d.home} ${h.home_team_wins}W, ${h.draws}D, ${d.away} ${h.away_team_wins}W`;
+      row(t, ["Date", "Match", "Score"], true);
+      h.matches.forEach(m => {
+        const span = document.createElement("span");
+        span.appendChild(teamLink(m.home));
+        span.appendChild(document.createTextNode(" vs "));
+        span.appendChild(teamLink(m.away));
+        row(t, [m.date, span, m.score]);
+      });
+    }
+
+    status.style.display = "none";
+    document.getElementById("content").style.display = "block";
+  } catch (e) {
+    status.textContent = "Could not reach the server. Try again in a moment.";
+  }
+}
+load();
+</script>
+</body>
+</html>
