@@ -174,3 +174,36 @@ for alpha in [0.003, 0.01, 0.03]:
     sc_p, probs = walk_forward_poisson(df, base_df, FOLDS, alpha=alpha)
     print(f"alpha={alpha} | folds: {[round(s, 4) for s in sc_p]} | avg: {np.mean(sc_p):.4f}"
           f" | draw min/mean/max: {probs[:, 1].min():.3f}/{probs[:, 1].mean():.3f}/{probs[:, 1].max():.3f}")
+
+# 12. Shots-on-target features on top of Elo
+print("\n" + "=" * 40)
+print("VERSION: Elo + rolling-10 shots-on-target net diff (SoT for - SoT against)")
+
+h = df[["Date", "HomeTeam", "HST", "AST"]].rename(
+    columns={"HomeTeam": "Team", "HST": "SF", "AST": "SA"})
+a = df[["Date", "AwayTeam", "AST", "HST"]].rename(
+    columns={"AwayTeam": "Team", "AST": "SF", "HST": "SA"})
+st = pd.concat([h, a]).sort_values(["Team", "Date"]).reset_index(drop=True)
+st["net"] = st["SF"] - st["SA"]
+st["roll_net"] = st.groupby("Team")["net"].transform(
+    lambda x: x.shift(1).rolling(window=10, min_periods=3).mean()   # shift(1) = no leakage
+)
+
+d12 = add_elo(base_df, k=K, home_adv=HOME_ADV, new_team_start=NEW_START)
+d12 = d12.merge(
+    st[["Date", "Team", "roll_net"]].rename(columns={"Team": "HomeTeam", "roll_net": "h_net"}),
+    on=["Date", "HomeTeam"], how="left")
+d12 = d12.merge(
+    st[["Date", "Team", "roll_net"]].rename(columns={"Team": "AwayTeam", "roll_net": "a_net"}),
+    on=["Date", "AwayTeam"], how="left")
+
+# NaN (shots missing / team ke pehle 3 match) -> 0 = "neutral", taaki rows 8591 hi rahein
+# *100: Elo diff ke scale (~±300) ke barabar laane ke liye, warna regularization isse dabaa degi
+d12["sot_diff"] = (d12["h_net"] - d12["a_net"]).fillna(0) * 100
+
+print("rows:", len(d12), "| sot_diff nonzero:", (d12["sot_diff"] != 0).mean().round(3))
+
+sc_e = walk_forward(d12, ["elo_diff"])
+sc_s = walk_forward(d12, ["elo_diff", "sot_diff"])
+print(f"Elo only      : {[round(s, 4) for s in sc_e]} | avg: {np.mean(sc_e):.4f}")
+print(f"Elo + SoT diff: {[round(s, 4) for s in sc_s]} | avg: {np.mean(sc_s):.4f}")

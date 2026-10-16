@@ -5,6 +5,7 @@ seasons = [f"{a:02d}{a+1:02d}" for a in range(3, 27)]
 # 0304, 0405, ... 2425, 2526, 2627
 
 base_cols = ["Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
+shot_cols = ["HS", "AS", "HST", "AST"]
 odds_options = [("AvgH", "AvgD", "AvgA"), ("BbAvH", "BbAvD", "BbAvA"), ("B365H", "B365D", "B365A")]
 
 
@@ -34,12 +35,17 @@ for s in seasons:
     if odds_used is None:
         d["AvgH"] = d["AvgD"] = d["AvgA"] = float("nan")
 
-    d = d[base_cols + ["AvgH", "AvgD", "AvgA"]].copy()
-    for c in ["FTHG", "FTAG", "AvgH", "AvgD", "AvgA"]:   # text se number banao
+    for c in shot_cols:                                  # missing shots column -> NaN
+        if c not in d.columns:
+            d[c] = float("nan")
+
+    d = d[base_cols + ["AvgH", "AvgD", "AvgA"] + shot_cols].copy()
+    for c in ["FTHG", "FTAG", "AvgH", "AvgD", "AvgA"] + shot_cols:   # text se number banao
         d[c] = pd.to_numeric(d[c], errors="coerce")
     d["Date"] = pd.to_datetime(d["Date"], dayfirst=True, format="mixed")
     d["season"] = s
-    print(d.shape, "NaT:", d["Date"].isna().sum(), "| odds:", odds_used)
+    print(d.shape, "NaT:", d["Date"].isna().sum(), "| odds:", odds_used,
+          "| HST missing:", d["HST"].isna().sum())
     frames.append(d)
 
 all_matches = pd.concat(frames, ignore_index=True)
