@@ -72,6 +72,17 @@ def team_summary(state, name):
                 "score": results.get(key),  # None if not played yet
             })
 
+    # --- Elo history (pre-match rating, last 3 seasons) + current rating ---
+    elo_df = state["elo_df"]
+    h = elo_df[elo_df["HomeTeam"] == name][["Date", "elo_home"]].rename(columns={"elo_home": "elo"})
+    a = elo_df[elo_df["AwayTeam"] == name][["Date", "elo_away"]].rename(columns={"elo_away": "elo"})
+    hist = pd.concat([h, a]).sort_values("Date")
+    hist = hist[hist["Date"] >= pd.Timestamp("2023-08-01")]
+    history = [{"date": d.strftime("%Y-%m-%d"), "elo": round(float(e), 1)}
+               for d, e in zip(hist["Date"], hist["elo"])]
+    history.append({"date": df["Date"].max().strftime("%Y-%m-%d"),
+                    "elo": round(float(ratings[name]), 1)})
+
     return {
         "team": name,
         "season": season,
@@ -82,4 +93,5 @@ def team_summary(state, name):
         "last5": last5,
         "season_results": season_rows[::-1],
         "predictions": predictions,
+        "history": history,
     }

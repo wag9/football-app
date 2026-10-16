@@ -30,6 +30,9 @@
   <div class="muted" id="sub"></div>
   <div class="cards" id="cards"></div>
 
+  <h2>Elo history</h2>
+  <div id="chart"></div>
+
   <h2>Last 5 matches</h2>
   <div class="form" id="form"></div>
   <table id="last5"></table>
@@ -42,7 +45,7 @@
 </div>
 
 <script>
-    
+
 const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
 const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
 
@@ -67,6 +70,52 @@ function teamLink(name) {
   return a;
 }
 function pct(x) { return (x * 100).toFixed(0) + "%"; }
+
+function drawChart(points) {
+  const box = document.getElementById("chart");
+  box.innerHTML = "";
+  if (points.length < 2) { box.textContent = "Not enough data."; return; }
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 760, H = 240, L = 44, R = 10, T = 10, B = 24;
+  const t = points.map(p => new Date(p.date).getTime());
+  const v = points.map(p => p.elo);
+  const t0 = Math.min(...t), t1 = Math.max(...t);
+  const lo = Math.floor(Math.min(...v) / 20) * 20, hi = Math.ceil(Math.max(...v) / 20) * 20;
+  const x = ms => L + (ms - t0) / (t1 - t0) * (W - L - R);
+  const y = e => T + (hi - e) / (hi - lo) * (H - T - B);
+
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.style.width = "100%";
+
+  function add(tag, attrs, text) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text !== undefined) n.textContent = text;
+    svg.appendChild(n);
+  }
+
+  // horizontal grid + Elo labels
+  for (let i = 0; i <= 4; i++) {
+    const e = lo + (hi - lo) * i / 4;
+    add("line", { x1: L, x2: W - R, y1: y(e), y2: y(e), stroke: "#262b36" });
+    add("text", { x: L - 6, y: y(e) + 4, fill: "#9aa4b2", "font-size": 11, "text-anchor": "end" }, Math.round(e));
+  }
+  // vertical ticks every 1 Aug (season start)
+  for (let yr = new Date(t0).getFullYear(); yr <= new Date(t1).getFullYear(); yr++) {
+    const ms = new Date(yr, 7, 1).getTime();
+    if (ms >= t0 && ms <= t1) {
+      add("line", { x1: x(ms), x2: x(ms), y1: T, y2: H - B, stroke: "#262b36" });
+      add("text", { x: x(ms) + 3, y: H - 8, fill: "#9aa4b2", "font-size": 11 }, "Aug " + yr);
+    }
+  }
+  add("polyline", {
+    points: points.map((p, i) => x(t[i]) + "," + y(p.elo)).join(" "),
+    fill: "none", stroke: "#6ea8fe", "stroke-width": 2,
+  });
+  add("circle", { cx: x(t[t.length - 1]), cy: y(v[v.length - 1]), r: 4, fill: "#6ea8fe" });
+  box.appendChild(svg);
+}
 
 function matchTable(table, matches) {
   table.innerHTML = "";
@@ -116,6 +165,7 @@ async function load() {
       row(preds, [p.date, match, pct(p.pH), pct(p.pD), pct(p.pA), p.score || "upcoming"]);
     });
 
+    drawChart(d.history);
     matchTable(document.getElementById("season"), d.season_results);
 
     status.style.display = "none";

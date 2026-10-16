@@ -20,7 +20,7 @@ def train(df=None):
     model = LogisticRegression(max_iter=1000)
     model.fit(df_elo[["elo_diff"]], df["FTR"])
 
-    return {"df": df, "ratings": ratings, "model": model, "current": current_teams(df)}
+    return {"df": df, "elo_df": df_elo, "ratings": ratings, "model": model, "current": current_teams(df)}
 
 
 def predict_match(state, home, away):
