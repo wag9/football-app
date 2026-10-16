@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from predict import predict, current
 
-MODEL_VERSION = "elo_only K30 HA75 NEW1400 hist0304"
+MODEL_VERSION = "elo_sot10 K30 HA75 NEW1400"
 LOG_PATH = "data/predictions_log.csv"
 
 # 1. Fixtures

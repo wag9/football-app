@@ -53,3 +53,13 @@ alpha 0.003: 0.9929 | 0.01: 0.9955 | 0.03: 1.0037 (Elo: 0.9831)
 Folds (alpha 0.003): [0.9324, 1.0138, 1.0326]. Equal to Elo in folds 1 and 3, much worse in fold 2 (+0.029).
 Draw max 0.315 at alpha 0.003. Fold 3 had 380 rows vs 374 (row-set mismatch).
 Result: worse than Elo, not adopted.
+
+## Elo + rolling-10 shots-on-target net diff (data 2003+)
+Elo only 0.9831 -> Elo + sot_diff 0.9776 (-0.0055). Folds: [0.9256, 0.9812, 1.0260] vs [0.9335, 0.9849, 1.0310].
+All 3 folds improved. NaN filled with 0, scaled x100. No tuning done yet.
+
+## Elo + rolling shots-on-target net diff (data 2003+)
+Feature: rolling mean of (SoT for - SoT against), shift(1), min_periods=3, NaN->0, x100.
+Window 5: 0.9795 | 10: 0.9776 | 20: 0.9786 (Elo only: 0.9831).
+All windows beat Elo; window 10 improved all 3 folds ([0.9256, 0.9812, 1.0260]).
+Adopted window 10 (middle value, no further tuning).
