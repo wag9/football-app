@@ -97,15 +97,16 @@ async function loadTable() {
   const rows = await res.json();
   let html = "<tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>";
   for (const r of rows) {
-    html += `<tr><td>${r.Pos}</td><td class="team">${r.Team}</td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GD}</td><td><b>${r.Pts}</b></td></tr>`;
+        html += `<tr><td>${r.Pos}</td><td class="team"><a href="team.html?name=${encodeURIComponent(r.Team)}">${r.Team}</a></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GD}</td><td><b>${r.Pts}</b></td></tr>`;
   }
   document.getElementById("table").innerHTML = html;
+  document.getElementById("status").style.display = "none";
+
 }
 
 loadUpcoming();
 loadTeams();
 loadTable();
-document.getElementById("status").style.display = "none";
 </script>
 </body>
 </html>

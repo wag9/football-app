@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team page</title>
+<style>
+  body { background:#0f1115; color:#e6e6e6; font-family:system-ui,sans-serif; max-width:820px; margin:0 auto; padding:24px 16px; }
+  a { color:#6ea8fe; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  h1 { margin:8px 0 4px; }
+  h2 { margin-top:32px; font-size:1.1rem; color:#9aa4b2; text-transform:uppercase; letter-spacing:.05em; }
+  .muted { color:#9aa4b2; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+  .card { background:#171a21; border:1px solid #262b36; border-radius:10px; padding:12px 16px; min-width:110px; }
+  .card .v { font-size:1.4rem; font-weight:600; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #262b36; font-size:.95rem; }
+  .form { display:flex; gap:6px; margin-top:8px; }
+  .pill { width:30px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#0f1115; }
+  .W { background:#4ade80; } .D { background:#facc15; } .L { background:#f87171; }
+  #status { margin-top:16px; }
+</style>
+</head>
+<body>
+<a href="index.html">&larr; Back to table</a>
+<div id="status" class="muted">Loading... (the first request can take ~30s while the free server wakes up)</div>
+<div id="content" style="display:none">
+  <h1 id="name"></h1>
+  <div class="muted" id="sub"></div>
+  <div class="cards" id="cards"></div>
+
+  <h2>Last 5 matches</h2>
+  <div class="form" id="form"></div>
+  <table id="last5"></table>
+
+  <h2>Predictions</h2>
+  <table id="preds"></table>
+
+  <h2>This season</h2>
+  <table id="season"></table>
+</div>
+
+<script>
+    
+const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
+const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
+
+function el(tag, text, cls) {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+}
+function row(table, cells, header) {
+  const tr = document.createElement("tr");
+  cells.forEach(c => {
+    const td = el(header ? "th" : "td");
+    if (c instanceof Node) td.appendChild(c); else td.textContent = c;
+    tr.appendChild(td);
+  });
+  table.appendChild(tr);
+}
+function teamLink(name) {
+  const a = el("a", name);
+  a.href = "team.html?name=" + encodeURIComponent(name);
+  return a;
+}
+function pct(x) { return (x * 100).toFixed(0) + "%"; }
+
+function matchTable(table, matches) {
+  table.innerHTML = "";
+  row(table, ["Date", "Opponent", "H/A", "Score", "Result"], true);
+  matches.forEach(m => {
+    row(table, [m.date, teamLink(m.opponent), m.venue, m.gf + "-" + m.ga, el("span", m.result, "")]);
+  });
+}
+
+async function load() {
+  const name = new URLSearchParams(location.search).get("name");
+  const status = document.getElementById("status");
+  if (!name) { status.textContent = "No team selected."; return; }
+  try {
+    const res = await fetch(API + "/team?name=" + encodeURIComponent(name));
+    if (!res.ok) { status.textContent = "Team not found."; return; }
+    const d = await res.json();
+    document.title = d.team;
+    document.getElementById("name").textContent = d.team;
+    document.getElementById("sub").textContent = "Season " + d.season;
+
+    const cards = document.getElementById("cards");
+    const r = d.record;
+    [["Elo", d.elo], ["Elo rank", d.elo_rank + " / " + d.n_teams],
+     ["Record", r.W + "-" + r.D + "-" + r.L], ["Goals", r.GF + ":" + r.GA],
+     ["Points", r.Pts]].forEach(([k, v]) => {
+      const c = el("div", undefined, "card");
+      c.appendChild(el("div", k, "muted"));
+      c.appendChild(el("div", String(v), "v"));
+      cards.appendChild(c);
+    });
+
+    const form = document.getElementById("form");
+    d.last5.forEach(m => form.appendChild(el("div", m.result, "pill " + m.result)));
+    matchTable(document.getElementById("last5"), d.last5);
+
+    const preds = document.getElementById("preds");
+    row(preds, ["Date", "Match", "Home", "Draw", "Away", "Score"], true);
+    if (d.predictions.length === 0) {
+      row(preds, ["No predictions logged for this team yet.", "", "", "", "", ""]);
+    }
+    d.predictions.forEach(p => {
+      const match = document.createElement("span");
+      match.appendChild(teamLink(p.home));
+      match.appendChild(document.createTextNode(" vs "));
+      match.appendChild(teamLink(p.away));
+      row(preds, [p.date, match, pct(p.pH), pct(p.pD), pct(p.pA), p.score || "upcoming"]);
+    });
+
+    matchTable(document.getElementById("season"), d.season_results);
+
+    status.style.display = "none";
+    document.getElementById("content").style.display = "block";
+  } catch (e) {
+    status.textContent = "Could not reach the server. Try again in a moment.";
+  }
+}
+load();
+</script>
+</body>
+</html>

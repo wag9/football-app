@@ -5,10 +5,16 @@ from fastapi import FastAPI, HTTPException
 from model import train, predict_match
 from table import league_table
 from fastapi.middleware.cors import CORSMiddleware
+from team_page import team_summary
 
 
 app = FastAPI(title="Football Predictor")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://wag9.github.io", "http://127.0.0.1:3000", "http://localhost:3000"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 state = train()          # server start hote hi ek baar train hota hai
 
 
@@ -79,3 +85,10 @@ def record():
     keyOf = {"H": "home", "D": "draw", "A": "away"}
     hits = sum(1 for r in rows if max(r["prob"], key=r["prob"].get) == keyOf[r["result"]])
     return {"played": len(rows), "top_pick_correct": hits}
+
+@app.get("/team")
+def team(name: str):
+    try:
+        return team_summary(state, name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
