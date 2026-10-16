@@ -24,6 +24,7 @@
 <script>
 const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
 const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
+const tl = (n) => `<a href="team.html?name=${encodeURIComponent(n)}">${n}</a>`;
 
 async function loadFixtures() {
   const res = await fetch(API + "/fixtures");
@@ -41,7 +42,7 @@ async function loadFixtures() {
       if (keyOf[r.result] === top) { hits++; mark = "✅"; } else { mark = "❌"; }
     }
     const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
-    html += `<tr><td>${r.date}</td><td class="team">${r.home} vs ${r.away}</td>
+    html += `<tr><td>${r.date}</td><td class="team">${tl(r.home)} vs ${tl(r.away)}</td>
              ${cell("home")}${cell("draw")}${cell("away")}
              <td>${r.score ?? "-"}</td><td>${mark}</td></tr>`;
   }
