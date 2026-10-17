@@ -1,0 +1,11 @@
+body { background:#0f1115; color:#e6e6e6; font-family:system-ui,sans-serif; max-width:820px; margin:0 auto; padding:24px 16px; }
+a { color:#6ea8fe; text-decoration:none; }
+a:hover { text-decoration:underline; }
+h1 { margin:8px 0 4px; }
+h2 { margin-top:32px; font-size:1.1rem; color:#9aa4b2; text-transform:uppercase; letter-spacing:.05em; }
+.muted { color:#9aa4b2; }
+table { width:100%; border-collapse:collapse; margin-top:8px; }
+th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #262b36; font-size:.95rem; }
+td.team { text-align:left; }
+td.top { font-weight:bold; background:#1f3a1f; }
+select, button { padding:6px; margin-right:6px; }
