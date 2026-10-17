@@ -15,3 +15,12 @@ select, button { padding:6px; margin-right:6px; }
 .tabs button.active { color:#e6e6e6; border-bottom-color:#6ea8fe; }
 .panel { display:none; }
 .panel.active { display:block; }
+
+@media (max-width: 600px) {
+  body { padding: 16px 10px; }
+  th, td { padding: 6px 4px; font-size: .85rem; }
+  h1 { font-size: 1.4rem; }
+  .cards { gap: 8px; }
+  .card { min-width: 90px; padding: 10px 12px; }
+}
+.panel, #content { overflow-x: auto; }
