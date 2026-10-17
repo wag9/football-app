@@ -89,3 +89,8 @@ The model over-predicts home wins by about 2.6 points and under-predicts away wi
 The earlier 0.7-0.8 overconfidence seen in the Premier League (n=97) does not replicate: pooled 0.744 predicted vs 0.761 actual (n=393).
 Likely cause (unverified): fitted on 2003+ history while home advantage has declined in the test seasons.
 
+## Recency-weighted logistic fit (five leagues, Elo + SoT10, 15 folds)
+Sample weights by age, halflife 3y / 6y vs equal weights. Pooled avg log loss: 0.9835 / 0.9835 vs 0.9850 (-0.0015 / -0.0014).
+Folds improved: 8 of 15 / 9 of 15. Below the 0.003 threshold, not adopted.
+Home/away bias shrinks (home gap 0.026 -> 0.011, away 0.024 -> 0.007 at 3y), consistent with a decline in home advantage over the history, but the log-loss effect is tiny.
+Per league (3y): F1 -0.0039, I1 -0.0039, E0 -0.0016, D1 +0.0008, SP1 +0.0014.
