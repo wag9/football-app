@@ -5,22 +5,23 @@ Live demo: https://wag9.github.io/football-app/
 
 <img src="docs/screenshot.png" alt="Front page" width="600">
 
-Elo-based Home/Draw/Away probability model for the Premier League and La Liga,
+Elo-based Home/Draw/Away probability model for the top five European leagues,
 with a FastAPI backend, a plain HTML/JS frontend, and a public log
 of locked-in predictions.
 
 ## Results (walk-forward validation, test seasons 2023/24 to 2025/26)
 
-| Model | Premier League | La Liga |
-|---|---|---|
-| Uniform guess | 1.0986 | 1.0986 |
-| Class-frequency baseline | 1.0736 | 1.0654 |
-| Elo only (K=30, home adv=75) | 0.9831 | 0.9727 |
-| **Elo + shots-on-target form** | **0.9776** | **0.9693** |
-| Bookmaker average odds | 0.9660 | 0.9555 |
+| League | Baseline | Elo only | Elo + shots form | Bookmaker | Gap to bookmaker |
+|---|---|---|---|---|---|
+| Premier League | 1.0736 | 0.9831 | **0.9776** | 0.9660 | 0.012 |
+| La Liga | 1.0654 | 0.9727 | **0.9693** | 0.9555 | 0.014 |
+| Bundesliga | 1.0804 | 0.9911 | **0.9856** | 0.9634 | 0.022 |
+| Serie A | 1.0915 | 0.9916 | **0.9887** | 0.9667 | 0.022 |
+| Ligue 1 | 1.0751 | 1.0080 | **1.0037** | 0.9818 | 0.022 |
 
-Avg log loss over 3 folds, lower is better. The shots feature improved all 3 folds in the
-Premier League and replicated on La Liga with the same config and no tuning.
+Avg log loss over 3 walk-forward folds (test seasons 2023/24 to 2025/26), lower is better.
+Same config in every league (K=30, home advantage 75, promoted-team start 1400), no per-league tuning.
+The shots-on-target feature improved 14 of 15 folds.
 
 ## Approach
 - Elo ratings updated match by match; the rating *before* each match is used as the feature (no leakage).
@@ -53,8 +54,9 @@ never overwritten. Results are compared against the bookmaker.
 ## Limitations
 - The model trails bookmaker odds, which include lineups and injuries.
 - Draw probability never exceeds ~27%, so draws are never the top pick.
-- Probabilities in the 0.7-0.8 range were overconfident in calibration checks.
+- Pooled over five leagues (5,256 test matches), the model over-predicts home wins by about 2.6 points and under-predicts away wins by about 2.4 points. Draw rates are well calibrated.
 - Model-vs-bookmaker gap is about 0.012 (Premier League) and 0.014 (La Liga).
+- The model trails bookmakers by about 0.012-0.014 in the Premier League and La Liga and about 0.022 in the other three leagues.
 
 ## Run locally
 ```

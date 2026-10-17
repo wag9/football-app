@@ -83,3 +83,9 @@ Ligue 1:    Elo 1.0080 | Elo + SoT 1.0037 (-0.0043) | bookmaker 0.9818 | gap 0.0
 SoT improved 14 of 15 folds across all five leagues (only Serie A fold 3 was flat, +0.0004).
 Gap to bookmaker is about 0.012-0.014 in PL and La Liga and about 0.022 in the other three.
 
+## Pooled calibration check, five leagues (Elo + SoT10, 5,256 test matches, no fix applied)
+Mean predicted vs actual: H 0.456 vs 0.430, D 0.254 vs 0.256, A 0.290 vs 0.314.
+The model over-predicts home wins by about 2.6 points and under-predicts away wins by about 2.4 points; draws are well calibrated.
+The earlier 0.7-0.8 overconfidence seen in the Premier League (n=97) does not replicate: pooled 0.744 predicted vs 0.761 actual (n=393).
+Likely cause (unverified): fitted on 2003+ history while home advantage has declined in the test seasons.
+
