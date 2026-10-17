@@ -138,3 +138,27 @@ def match(home: str, away: str, date: Optional[str] = None, league: str = DEFAUL
         return match_summary(get_state(league), home, away, date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/upcoming")
+def upcoming_all(days: int = 7):
+    """Next matches across all leagues, from the prediction logs (no model training needed)."""
+    today = pd.Timestamp.now(tz="UTC").tz_localize(None).normalize()
+    horizon = today + pd.Timedelta(days=days)
+    out = []
+    for code, cfg in LEAGUES.items():
+        if not (os.path.exists(cfg["log"]) and os.path.exists(cfg["matches"])):
+            continue
+        log = pd.read_csv(cfg["log"], parse_dates=["Date"])
+        res = pd.read_csv(cfg["matches"], usecols=["Date", "HomeTeam", "AwayTeam", "FTR"],
+                          parse_dates=["Date"]).dropna(subset=["FTR"])
+        m = log.merge(res, on=["Date", "HomeTeam", "AwayTeam"], how="left")
+        m = m[m["FTR"].isna() & (m["Date"] >= today) & (m["Date"] <= horizon)]
+        for _, r in m.iterrows():
+            out.append({
+                "date": r["Date"].strftime("%Y-%m-%d"),
+                "league": code, "league_name": cfg["name"],
+                "home": r["HomeTeam"], "away": r["AwayTeam"],
+                "prob": {"home": float(r["pH"]), "draw": float(r["pD"]), "away": float(r["pA"])},
+            })
+    out.sort(key=lambda r: (r["date"], r["league_name"], r["home"]))
+    return out
