@@ -5,22 +5,22 @@ Live demo: https://wag9.github.io/football-app/
 
 <img src="docs/screenshot.png" alt="Front page" width="600">
 
-Elo-based Home/Draw/Away probability model for the Premier League,
+Elo-based Home/Draw/Away probability model for the Premier League and La Liga,
 with a FastAPI backend, a plain HTML/JS frontend, and a public log
 of locked-in predictions.
 
 ## Results (walk-forward validation, test seasons 2023/24 to 2025/26)
 
-| Model | Avg log loss (3 folds) |
-|---|---|
-| Uniform guess | 1.0986 |
-| Class-frequency baseline | 1.0736 |
-| **Elo only (K=30, home adv=75)** | **0.9831** |
-| Bookmaker average odds | 0.9660 |
+| Model | Premier League | La Liga |
+|---|---|---|
+| Uniform guess | 1.0986 | 1.0986 |
+| Class-frequency baseline | 1.0736 | 1.0654 |
+| Elo only (K=30, home adv=75) | 0.9831 | 0.9727 |
+| **Elo + shots-on-target form** | **0.9776** | **0.9693** |
+| Bookmaker average odds | 0.9660 | 0.9555 |
 
-Lower is better. The model closes about 84% of the gap between the baseline and
-the bookmaker. An earlier model using 12 rolling-form features scored ~1.02 on a
-different 2-season split and is not directly comparable.
+Avg log loss over 3 folds, lower is better. The shots feature improved all 3 folds in the
+Premier League and replicated on La Liga with the same config and no tuning.
 
 ## Approach
 - Elo ratings updated match by match; the rating *before* each match is used as the feature (no leakage).
@@ -28,6 +28,9 @@ different 2-season split and is not directly comparable.
 - Walk-forward validation by season, never random splits.
 - Team pages: Elo rating and rank, form, season results, Elo history chart, and logged predictions per team.
 - Elo + rolling shots-on-target net diff (walk-forward log loss 0.9776 vs 0.9831 Elo only)
+- Feature: rolling-10 mean of (shots on target for minus against), shifted by one match (no leakage).
+- One Elo state and one prediction log per league.
+- Match preview page: model probabilities, Elo, recent form, head-to-head and shots form.
 
 ## What did not help (tested, flat or worse)
 Longer history, mean reversion between seasons, margin-of-victory Elo,
@@ -51,6 +54,7 @@ never overwritten. Results are compared against the bookmaker.
 - The model trails bookmaker odds, which include lineups and injuries.
 - Draw probability never exceeds ~27%, so draws are never the top pick.
 - Probabilities in the 0.7-0.8 range were overconfident in calibration checks.
+- Model-vs-bookmaker gap is about 0.012 (Premier League) and 0.014 (La Liga).
 
 ## Run locally
 ```

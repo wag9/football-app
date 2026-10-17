@@ -1,4 +1,6 @@
-# laliga_check.py -- Elo vs Elo+SoT vs bookmaker on La Liga (same 3 folds as PL)
+# league_check.py -- python league_check.py <prefix>
+import sys
+
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -12,11 +14,13 @@ LABELS = ["A", "D", "H"]
 FOLDS = [("2023-08-01", "2024-08-01"), ("2024-08-01", "2025-08-01"), ("2025-08-01", "2026-08-01")]
 K, HOME_ADV, NEW_START = 30, 75, 1400
 
-df = load_matches("data/laliga_matches.csv")
+PREFIX = sys.argv[1]
+df = load_matches(f"data/{PREFIX}_matches.csv")
 df = df.dropna(subset=["FTHG", "FTAG", "FTR"]).reset_index(drop=True)
-print("VERSION: La Liga, Elo K30 HA75 NEW1400 (PL config, no tuning), + SoT10")
+print(f"VERSION: {PREFIX}, Elo K30 HA75 NEW1400 (PL config, no tuning), + SoT10")
 print("rows:", len(df), "| teams:", df["HomeTeam"].nunique())
 print("class freq (all):", df["FTR"].value_counts(normalize=True).reindex(LABELS).round(3).to_dict())
+print("SoT missing by season:", df.groupby("season")["HST"].apply(lambda s: s.isna().mean()).round(2).loc[lambda s: s > 0].to_dict())
 
 d = add_elo_features(df, k=K, home_adv=HOME_ADV, new_team_start=NEW_START)
 d["sot_diff"] = add_sot_feature(df)
