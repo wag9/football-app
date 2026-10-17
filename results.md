@@ -47,6 +47,8 @@ Average log loss 0.9831, baseline 1.0736, bookmaker 0.9660.
 First 10 locked predictions (matchweek of 10 Oct 2026): model log loss 1.0944,
 bookmaker 1.0212, top-pick accuracy 5/10. Far too small a sample to conclude
 anything; the log is being extended weekly.
+La Liga log: La Coruna vs Levante (2026-10-16) was logged on 2026-10-17, after the match date, so it is not a valid pre-match prediction.
+Removed in a follow-up commit (rule: logged_on must be <= match date); the earlier commit stays in git history.
 
 ## Poisson attack/defence (independent goals, halflife 730d, refit 28d)
 alpha 0.003: 0.9929 | 0.01: 0.9955 | 0.03: 1.0037 (Elo: 0.9831)
@@ -73,3 +75,4 @@ SoT already captures the shot information (total shots contains SoT). Neither ad
 Elo 0.9727 | Elo + SoT10 0.9693 (-0.0034) | baseline 1.0654 | bookmaker 0.9555.
 Folds Elo+SoT: [0.9639, 0.9706, 0.9734]. SoT gain replicates the PL result.
 Gap to bookmaker 0.0138 (PL ~0.0116). 0304/0405 have no shots data (sot_diff = 0).
+

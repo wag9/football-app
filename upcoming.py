@@ -28,6 +28,14 @@ played = pd.read_csv(cfg["matches"], parse_dates=["Date"])
 played_keys = set(zip(played["Date"], played["HomeTeam"], played["AwayTeam"]))
 fx = fx[[(d, h, a) not in played_keys for d, h, a in zip(fx["Date"], fx["HomeTeam"], fx["AwayTeam"])]]
 
+# 2b. Guard: sirf aaj ya aage ke matches (beete hue matches pre-match prediction nahi ho sakte)
+today = pd.Timestamp.today().normalize()
+stale = fx[fx["Date"] < today]
+if len(stale):
+    print(f"skip {len(stale)} past fixtures not yet in results:",
+          list(zip(stale["HomeTeam"], stale["AwayTeam"])))
+fx = fx[fx["Date"] >= today]
+
 # 3. Predict
 rows = []
 for r in fx.itertuples():
