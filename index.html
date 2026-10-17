@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-  <select id="league" onchange="location.search = '?league=' + this.value"></select>
+  <script src="nav.js"></script>
   <h1 id="title">Football Predictor</h1>
   <p id="status" class="muted">Loading data... the first load can take up to a minute while the server wakes up.</p>
    
@@ -54,8 +54,7 @@ async function loadTeams() {
   const res = await fetch(`${API}/?${Q}`);
   const data = await res.json();
   if (!res.ok) { document.getElementById("status").textContent = data.detail || "League not found."; return; }
-  document.getElementById("league").innerHTML = data.leagues
-    .map(l => `<option value="${l.code}" ${l.code === LEAGUE ? "selected" : ""}>${l.name}</option>`).join("");
+    map(l => `<option value="${l.code}" ${l.code === LEAGUE ? "selected" : ""}>${l.name}</option>`).join("");
   const cur = data.leagues.find(l => l.code === LEAGUE);
   if (cur) { document.getElementById("title").textContent = cur.name; document.title = cur.name; }
   for (const id of ["home", "away"]) {
