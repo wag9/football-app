@@ -1,12 +1,19 @@
-# check.py
+# check.py -- python check.py [E0|SP1]
+import sys
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import log_loss
 
-LABELS = ["A", "D", "H"]
+from leagues import LEAGUES, DEFAULT
 
-log = pd.read_csv("data/predictions_log.csv", parse_dates=["Date"])
-res = pd.read_csv("data/all_matches.csv", parse_dates=["Date"])
+LABELS = ["A", "D", "H"]
+league = sys.argv[1] if len(sys.argv) > 1 else DEFAULT
+cfg = LEAGUES[league]
+print("league:", league, cfg["name"])
+
+log = pd.read_csv(cfg["log"], parse_dates=["Date"])
+res = pd.read_csv(cfg["matches"], parse_dates=["Date"])
 
 # Sirf wahi predictions jinke result aa chuke
 m = log.merge(res[["Date", "HomeTeam", "AwayTeam", "FTR", "AvgH", "AvgD", "AvgA"]],

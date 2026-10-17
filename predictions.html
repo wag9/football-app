@@ -10,7 +10,7 @@
   </style>
 </head>
 <body>
-  <a href="index.html">← Back</a>
+  <a id="back" href="index.html">← Back</a>
   <h1>Prediction history</h1>
   <div id="summary"></div>
   <table id="fixtures"></table>
@@ -18,10 +18,13 @@
 <script>
 const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
 const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
-const tl = (n) => `<a href="team.html?name=${encodeURIComponent(n)}">${n}</a>`;
+const LEAGUE = new URLSearchParams(location.search).get("league") || "E0";
+const Q = "league=" + encodeURIComponent(LEAGUE);
+const tl = (n) => `<a href="team.html?name=${encodeURIComponent(n)}&${Q}">${n}</a>`;
+document.getElementById("back").href = "index.html?" + Q;
 
 async function loadFixtures() {
-  const res = await fetch(API + "/fixtures");
+  const res = await fetch(`${API}/fixtures?${Q}`);
   const rows = await res.json();
   const keyOf = { H: "home", D: "draw", A: "away" };
   let hits = 0, played = 0;
@@ -38,7 +41,8 @@ async function loadFixtures() {
     const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
     html += `<tr><td>${r.date}</td><td class="team">${tl(r.home)} vs ${tl(r.away)}</td>
              ${cell("home")}${cell("draw")}${cell("away")}
-             <td>${r.score ?? "-"}<td>${mark}</td><td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}">Details</a></td></tr>`;
+             <td>${r.score ?? "-"}</td><td>${mark}</td>
+             <td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}&${Q}">Details</a></td></tr>`;
   }
   document.getElementById("fixtures").innerHTML = html;
   document.getElementById("summary").textContent =

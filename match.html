@@ -40,6 +40,8 @@
 <script>
 const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
 const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
+const LEAGUE = new URLSearchParams(location.search).get("league") || "E0";
+document.querySelector('a[href="index.html"]').href = "index.html?league=" + encodeURIComponent(LEAGUE);
 
 function el(tag, text, cls) {
   const e = document.createElement(tag);
@@ -58,7 +60,7 @@ function row(table, cells, header) {
 }
 function teamLink(name) {
   const a = el("a", name);
-  a.href = "team.html?name=" + encodeURIComponent(name);
+  a.href = "team.html?name=" + encodeURIComponent(name) + "&league=" + encodeURIComponent(LEAGUE);
   return a;
 }
 function sot(v) { return v === null ? "n/a" : (v > 0 ? "+" : "") + v; }
@@ -82,6 +84,7 @@ async function load() {
   if (!home || !away) { status.textContent = "No match selected."; return; }
   try {
     let url = `${API}/match?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`;
+    url += "&league=" + encodeURIComponent(LEAGUE);
     if (date) url += "&date=" + encodeURIComponent(date);
     const res = await fetch(url);
     if (!res.ok) {

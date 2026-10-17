@@ -6,15 +6,16 @@
   <title>Football Predictor</title>
   <link rel="stylesheet" href="style.css">
   <style>
-     #summary { margin: 6px 0; color: #aaa; }
+    #summary { margin: 6px 0; color: #aaa; }
     .bar { display: flex; height: 26px; margin-top: 10px; border-radius: 4px; overflow: hidden; }
     .bar div { display: flex; align-items: center; justify-content: center; font-size: 13px; color: #000; }
     .h { background: #4caf50; } .d { background: #bbb; } .a { background: #f44336; }
   </style>
 </head>
 <body>
-  <h1>Premier League</h1>
-  <p id="status" style="color:#aaa">Loading data... the first load can take up to a minute while the server wakes up.</p>
+  <select id="league" onchange="location.search = '?league=' + this.value"></select>
+  <h1 id="title">Football Predictor</h1>
+  <p id="status" class="muted">Loading data... the first load can take up to a minute while the server wakes up.</p>
 
   <h2>Predict a match</h2>
   <select id="home"></select> vs <select id="away"></select>
@@ -25,20 +26,26 @@
   <div id="summary"></div>
   <table id="fixtures"></table>
 
-  <h2>Table 2026/27</h2>
+  <h2>League table</h2>
   <table id="table"></table>
 
 <script>
 const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
 const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
-const tl = (n) => `<a href="team.html?name=${encodeURIComponent(n)}">${n}</a>`;
+const LEAGUE = new URLSearchParams(location.search).get("league") || "E0";
+const Q = "league=" + encodeURIComponent(LEAGUE);
+const tl = (n) => `<a href="team.html?name=${encodeURIComponent(n)}&${Q}">${n}</a>`;
 
 async function loadTeams() {
-  const res = await fetch(API + "/");
+  const res = await fetch(`${API}/?${Q}`);
   const data = await res.json();
+  if (!res.ok) { document.getElementById("status").textContent = data.detail || "League not found."; return; }
+  document.getElementById("league").innerHTML = data.leagues
+    .map(l => `<option value="${l.code}" ${l.code === LEAGUE ? "selected" : ""}>${l.name}</option>`).join("");
+  const cur = data.leagues.find(l => l.code === LEAGUE);
+  if (cur) { document.getElementById("title").textContent = cur.name; document.title = cur.name; }
   for (const id of ["home", "away"]) {
-    const sel = document.getElementById(id);
-    sel.innerHTML = data.teams.map(t => `<option>${t}</option>`).join("");
+    document.getElementById(id).innerHTML = data.teams.map(t => `<option>${t}</option>`).join("");
   }
   document.getElementById("away").selectedIndex = 1;
 }
@@ -51,7 +58,7 @@ async function predict() {
     out.textContent = "Please choose two different teams.";
     return;
   }
-  const res = await fetch(`${API}/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`);
+  const res = await fetch(`${API}/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}&${Q}`);
   const d = await res.json();
   if (!res.ok) { out.textContent = d.detail; return; }
   const p = d.prob;
@@ -66,8 +73,8 @@ async function predict() {
 
 async function loadUpcoming() {
   const [fxRes, recRes] = await Promise.all([
-    fetch(API + "/fixtures?status=upcoming"),
-    fetch(API + "/record"),
+    fetch(`${API}/fixtures?status=upcoming&${Q}`),
+    fetch(`${API}/record?${Q}`),
   ]);
   const rows = (await fxRes.json()).slice(0, 10);     // next 10 only
   const rec = await recRes.json();
@@ -77,26 +84,25 @@ async function loadUpcoming() {
     const p = r.prob;
     const top = Object.keys(p).reduce((a, b) => (p[a] >= p[b] ? a : b));
     const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
-        html += `<tr><td>${r.date}</td><td class="team">${tl(r.home)} vs ${tl(r.away)}</td>
+    html += `<tr><td>${r.date}</td><td class="team">${tl(r.home)} vs ${tl(r.away)}</td>
              ${cell("home")}${cell("draw")}${cell("away")}
-             <td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}">Details</a></td></tr>`;
+             <td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}&${Q}">Details</a></td></tr>`;
   }
   document.getElementById("fixtures").innerHTML =
     rows.length ? html : "<tr><td>No upcoming matches logged yet.</td></tr>";
   document.getElementById("summary").innerHTML =
-    `Track record: ${rec.top_pick_correct}/${rec.played} top picks correct · <a href="predictions.html">Full history</a>`;
+    `Track record: ${rec.top_pick_correct}/${rec.played} top picks correct · <a href="predictions.html?${Q}">Full history</a>`;
 }
 
 async function loadTable() {
-  const res = await fetch(API + "/table");
+  const res = await fetch(`${API}/table?${Q}`);
   const rows = await res.json();
   let html = "<tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>";
   for (const r of rows) {
-        html += `<tr><td>${r.Pos}</td><td class="team"><a href="team.html?name=${encodeURIComponent(r.Team)}">${r.Team}</a></td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GD}</td><td><b>${r.Pts}</b></td></tr>`;
+    html += `<tr><td>${r.Pos}</td><td class="team">${tl(r.Team)}</td><td>${r.P}</td><td>${r.W}</td><td>${r.D}</td><td>${r.L}</td><td>${r.GD}</td><td><b>${r.Pts}</b></td></tr>`;
   }
   document.getElementById("table").innerHTML = html;
   document.getElementById("status").style.display = "none";
-
 }
 
 loadUpcoming();
