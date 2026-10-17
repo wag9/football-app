@@ -1,4 +1,4 @@
-# upcoming.py -- python upcoming.py [E0|SP1]
+# upcoming.py -- python upcoming.py [E0|SP1|D1|I1|F1]
 import os
 import sys
 
@@ -28,7 +28,7 @@ played = pd.read_csv(cfg["matches"], parse_dates=["Date"])
 played_keys = set(zip(played["Date"], played["HomeTeam"], played["AwayTeam"]))
 fx = fx[[(d, h, a) not in played_keys for d, h, a in zip(fx["Date"], fx["HomeTeam"], fx["AwayTeam"])]]
 
-# 2b. Guard: sirf aaj ya aage ke matches (beete hue matches pre-match prediction nahi ho sakte)
+# 2b. Guard: sirf aaj ya aage ke matches
 today = pd.Timestamp.today().normalize()
 stale = fx[fx["Date"] < today]
 if len(stale):
@@ -51,7 +51,9 @@ for r in fx.itertuples():
     })
 
 if not rows:
-    raise SystemExit("No new fixtures to log for this league.")
+    print("No new fixtures to log for this league.")
+    sys.exit(0)
+
 new = pd.DataFrame(rows)
 
 # 4. Purane log ke saath jodo, purani prediction KABHI overwrite nahi (keep="first")

@@ -20,8 +20,8 @@ m = log.merge(res[["Date", "HomeTeam", "AwayTeam", "FTR", "AvgH", "AvgD", "AvgA"
               on=["Date", "HomeTeam", "AwayTeam"], how="inner")
 print("predictions with results:", len(m), "of", len(log))
 if len(m) == 0:
-    raise SystemExit("Abhi koi result nahi aaya.")
-
+      print("No results yet for logged predictions.")
+      sys.exit(0)
 # Model
 P = m[["pA", "pD", "pH"]].values
 P = P / P.sum(axis=1, keepdims=True)   # rounding ka sum fix
