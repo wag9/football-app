@@ -76,3 +76,10 @@ Elo 0.9727 | Elo + SoT10 0.9693 (-0.0034) | baseline 1.0654 | bookmaker 0.9555.
 Folds Elo+SoT: [0.9639, 0.9706, 0.9734]. SoT gain replicates the PL result.
 Gap to bookmaker 0.0138 (PL ~0.0116). 0304/0405 have no shots data (sot_diff = 0).
 
+## Bundesliga, Serie A, Ligue 1 (same config, no tuning, 3 folds 2023/24-2025/26)
+Bundesliga: Elo 0.9911 | Elo + SoT 0.9856 (-0.0055) | bookmaker 0.9634 | gap 0.0222.
+Serie A:    Elo 0.9916 | Elo + SoT 0.9887 (-0.0029) | bookmaker 0.9667 | gap 0.0220.
+Ligue 1:    Elo 1.0080 | Elo + SoT 1.0037 (-0.0043) | bookmaker 0.9818 | gap 0.0219.
+SoT improved 14 of 15 folds across all five leagues (only Serie A fold 3 was flat, +0.0004).
+Gap to bookmaker is about 0.012-0.014 in PL and La Liga and about 0.022 in the other three.
+

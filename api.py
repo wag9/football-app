@@ -1,5 +1,6 @@
 # api.py
 import os
+import threading
 from typing import Optional
 
 import pandas as pd
@@ -20,14 +21,28 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
-states = {code: train(code) for code in LEAGUES}     # startup par ek baar, har league ke liye
+
+_states = {}
+_lock = threading.Lock()
 
 
 def get_state(league):
-    if league not in states:
+    """Train a league on first use, then keep it in memory."""
+    if league not in LEAGUES:
         raise HTTPException(status_code=404,
-                            detail=f"Unknown league '{league}'. Available: {sorted(states)}")
-    return states[league]
+                            detail=f"Unknown league '{league}'. Available: {sorted(LEAGUES)}")
+    if league not in _states:
+        with _lock:
+            if league not in _states:
+                try:
+                    _states[league] = train(league)
+                except FileNotFoundError:
+                    raise HTTPException(status_code=503,
+                                        detail=f"Data for {LEAGUES[league]['name']} is not available yet.")
+    return _states[league]
+
+
+get_state(DEFAULT)      # warm up only the default league at startup
 
 
 @app.get("/")
@@ -36,7 +51,8 @@ def root(league: str = DEFAULT):
     return {
         "status": "ok",
         "teams": sorted(st["current"]),
-        "leagues": [{"code": c, "name": LEAGUES[c]["name"]} for c in LEAGUES],
+        "leagues": [{"code": c, "name": cfg["name"]}
+                    for c, cfg in LEAGUES.items() if os.path.exists(cfg["matches"])],
     }
 
 
@@ -75,7 +91,6 @@ def fixtures(status: str = "all", league: str = DEFAULT):
 
     log = pd.read_csv(log_path, parse_dates=["Date"])
 
-    # result jodo: jo match all_matches mein hai wo played hai
     res = st["df"][["Date", "HomeTeam", "AwayTeam", "FTR", "FTHG", "FTAG"]]
     m = log.merge(res, on=["Date", "HomeTeam", "AwayTeam"], how="left")
     m["played"] = m["FTR"].notna()
