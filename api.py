@@ -1,10 +1,14 @@
 # api.py
 import os
+from typing import Optional
+
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from leagues import LEAGUES, DEFAULT
 from model import train, predict_match
 from table import league_table
-from fastapi.middleware.cors import CORSMiddleware
 from team_page import team_summary
 from match_page import match_summary
 
@@ -16,47 +20,63 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
-state = train()          # server start hote hi ek baar train hota hai
+states = {code: train(code) for code in LEAGUES}     # startup par ek baar, har league ke liye
+
+
+def get_state(league):
+    if league not in states:
+        raise HTTPException(status_code=404,
+                            detail=f"Unknown league '{league}'. Available: {sorted(states)}")
+    return states[league]
 
 
 @app.get("/")
-def root():
-    return {"status": "ok", "teams": sorted(state["current"])}
+def root(league: str = DEFAULT):
+    st = get_state(league)
+    return {
+        "status": "ok",
+        "teams": sorted(st["current"]),
+        "leagues": [{"code": c, "name": LEAGUES[c]["name"]} for c in LEAGUES],
+    }
 
 
 @app.get("/predict")
-def predict(home: str, away: str):
+def predict(home: str, away: str, league: str = DEFAULT):
+    st = get_state(league)
     try:
-        p = predict_match(state, home, away)
+        p = predict_match(st, home, away)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return {
         "home": home, "away": away,
-        "elo_home": round(state["ratings"][home]),
-        "elo_away": round(state["ratings"][away]),
+        "elo_home": round(st["ratings"][home]),
+        "elo_away": round(st["ratings"][away]),
         "prob": {"home": round(p["H"], 4), "draw": round(p["D"], 4), "away": round(p["A"], 4)},
     }
 
 
 @app.get("/table")
-def table(season: int = 2627):
-    t = league_table(state["df"], season).reset_index()
+def table(season: Optional[int] = None, league: str = DEFAULT):
+    st = get_state(league)
+    if season is None:
+        season = int(st["df"]["season"].max())
+    t = league_table(st["df"], season).reset_index()
     t = t.rename(columns={"index": "Pos"})
     return t.to_dict(orient="records")
 
-LOG_PATH = "data/predictions_log.csv"
-
 
 @app.get("/fixtures")
-def fixtures(status: str = "all"):
+def fixtures(status: str = "all", league: str = DEFAULT):
     """status: all | upcoming | played"""
-    if not os.path.exists(LOG_PATH):
+    st = get_state(league)
+    log_path = st["log_path"]
+    if not os.path.exists(log_path):
         return []
 
-    log = pd.read_csv(LOG_PATH, parse_dates=["Date"])
+    log = pd.read_csv(log_path, parse_dates=["Date"])
 
     # result jodo: jo match all_matches mein hai wo played hai
-    res = state["df"][["Date", "HomeTeam", "AwayTeam", "FTR", "FTHG", "FTAG"]]
+    res = st["df"][["Date", "HomeTeam", "AwayTeam", "FTR", "FTHG", "FTAG"]]
     m = log.merge(res, on=["Date", "HomeTeam", "AwayTeam"], how="left")
     m["played"] = m["FTR"].notna()
 
@@ -80,23 +100,26 @@ def fixtures(status: str = "all"):
         for _, r in m.iterrows()
     ]
 
+
 @app.get("/record")
-def record():
-    rows = fixtures(status="played")
+def record(league: str = DEFAULT):
+    rows = fixtures(status="played", league=league)
     keyOf = {"H": "home", "D": "draw", "A": "away"}
     hits = sum(1 for r in rows if max(r["prob"], key=r["prob"].get) == keyOf[r["result"]])
     return {"played": len(rows), "top_pick_correct": hits}
 
+
 @app.get("/team")
-def team(name: str):
+def team(name: str, league: str = DEFAULT):
     try:
-        return team_summary(state, name)
+        return team_summary(get_state(league), name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @app.get("/match")
-def match(home: str, away: str, date: str = None):
+def match(home: str, away: str, date: Optional[str] = None, league: str = DEFAULT):
     try:
-        return match_summary(state, home, away, date)
+        return match_summary(get_state(league), home, away, date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

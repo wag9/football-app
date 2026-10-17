@@ -2,20 +2,21 @@
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-
 from data import load_matches, current_teams
 from elo import add_elo_features
 from shots import add_sot_feature, team_shots_form, SCALE
+from leagues import LEAGUES, DEFAULT
 
 # Final config: Elo (K=30, HA=75, NEW=1400) + rolling-10 shots-on-target net diff
 K, HOME_ADV, NEW_START = 30, 75, 1400
 FEATURES = ["elo_diff", "sot_diff"]
 
 
-def train(df=None):
-    """Poore data pe Elo + shots feature + logistic regression train karo. State dict return karta hai."""
+def train(league=DEFAULT, df=None):
+    """Ek league ke poore data pe Elo + shots feature + logistic regression train karo."""
+    cfg = LEAGUES[league]
     if df is None:
-        df = load_matches()
+        df = load_matches(cfg["matches"])
 
     df_elo, ratings = add_elo_features(
         df, k=K, home_adv=HOME_ADV, new_team_start=NEW_START, return_ratings=True
@@ -27,7 +28,8 @@ def train(df=None):
     model.fit(X[FEATURES], df["FTR"])
 
     return {"df": df, "elo_df": df_elo, "ratings": ratings, "model": model,
-            "current": current_teams(df), "shots_form": team_shots_form(df)}
+            "current": current_teams(df), "shots_form": team_shots_form(df),
+            "league": league, "log_path": cfg["log"]}
 
 
 def predict_match(state, home, away):

@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-
+from pathlib import Path
 from model import predict_match
-from team_page import _match_row, LOG_PATH
+from team_page import _match_row
 
 
 def _clean(x):
@@ -46,8 +46,9 @@ def match_summary(state, home, away, date=None):
     logged, result = None, None
     if date:
         d = pd.Timestamp(date)                    # bad date -> ValueError -> 400
-        if LOG_PATH.exists():
-            log = pd.read_csv(LOG_PATH)
+        log_path = Path(state["log_path"])
+        if log_path.exists():
+            log = pd.read_csv(log_path)
             hit = log[(log["Date"].astype(str).str[:10] == date) &
                       (log["HomeTeam"] == home) & (log["AwayTeam"] == away)]
             if len(hit):

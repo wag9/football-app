@@ -52,8 +52,9 @@ def team_summary(state, name):
 
     # --- predictions log for this team (with result if already played) ---
     predictions = []
-    if LOG_PATH.exists():
-        log = pd.read_csv(LOG_PATH)
+    log_path = Path(state["log_path"])
+    if log_path.exists():
+        log = pd.read_csv(log_path)
         log = log[(log["HomeTeam"] == name) | (log["AwayTeam"] == name)]
         results = {}
         for _, r in df.dropna(subset=["FTHG", "FTAG"]).iterrows():

@@ -68,3 +68,8 @@ Adopted window 10 (middle value, no further tuning).
 Baseline Elo + SoT10: 0.9776. + total shots net (rolling-10): 0.9774 (-0.0002). + corners net: 0.9791 (+0.0015).
 Folds, shots: [0.9235, 0.9803, 1.0283]; corners: [0.9257, 0.9844, 1.0272].
 SoT already captures the shot information (total shots contains SoT). Neither adopted.
+
+## La Liga (SP1), same config, no tuning (data 2003+, same 3 folds)
+Elo 0.9727 | Elo + SoT10 0.9693 (-0.0034) | baseline 1.0654 | bookmaker 0.9555.
+Folds Elo+SoT: [0.9639, 0.9706, 0.9734]. SoT gain replicates the PL result.
+Gap to bookmaker 0.0138 (PL ~0.0116). 0304/0405 have no shots data (sot_diff = 0).
