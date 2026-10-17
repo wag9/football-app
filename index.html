@@ -17,20 +17,31 @@
   <h1 id="title">Football Predictor</h1>
   <p id="status" class="muted">Loading data... the first load can take up to a minute while the server wakes up.</p>
    
-  <h2>This week, all leagues</h2>
-  <table id="week"></table>
+  <div class="tabs">
+    <button data-tab="upcoming" class="active">Upcoming</button>
+    <button data-tab="table">Table</button>
+    <button data-tab="week">All leagues</button>
+    <button data-tab="predict">Predict</button>
+  </div>
 
-  <h2>Predict a match</h2>
-  <select id="home"></select> vs <select id="away"></select>
-  <button onclick="predict()">Predict</button>
-  <div id="result"></div>
+  <div class="panel active" id="panel-upcoming">
+    <div id="summary"></div>
+    <table id="fixtures"></table>
+  </div>
 
-  <h2>Upcoming matches</h2>
-  <div id="summary"></div>
-  <table id="fixtures"></table>
+  <div class="panel" id="panel-table">
+    <table id="table"></table>
+  </div>
 
-  <h2>League table</h2>
-  <table id="table"></table>
+  <div class="panel" id="panel-week">
+    <table id="week"></table>
+  </div>
+
+  <div class="panel" id="panel-predict">
+    <select id="home"></select> vs <select id="away"></select>
+    <button onclick="predict()">Predict</button>
+    <div id="result"></div>
+  </div>
 
 <script>
 const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
@@ -73,6 +84,15 @@ async function predict() {
       <div class="a" style="width:${p.away * 100}%">${Math.round(p.away * 100)}%</div>
     </div>`;
 }
+
+function showTab(name) {
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + name));
+  history.replaceState(null, "", "#" + name);
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+const startTab = location.hash.slice(1);
+showTab(["upcoming", "table", "week", "predict"].includes(startTab) ? startTab : "upcoming");
 
 async function loadUpcoming() {
   const [fxRes, recRes] = await Promise.all([
