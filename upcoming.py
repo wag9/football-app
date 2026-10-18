@@ -1,68 +1,79 @@
-# upcoming.py -- python upcoming.py [E0|SP1|D1|I1|F1]
-import os
+# upcoming.py -- python upcoming.py [E0|SP1|D1|I1|F1] [--dry-run]
+#
+# Logs pre-match predictions for fixtures that have not kicked off yet.
+# --dry-run shows exactly what would be logged and writes nothing.
 import sys
+from collections import Counter
+from datetime import datetime, timezone
 
 import pandas as pd
 
+import prediction_log as pl
 from leagues import LEAGUES, DEFAULT
 from model import train, predict_match
 
 MODEL_VERSION = "elo_sot10 K30 HA75 NEW1400"
+FIXTURES_PATH = "data/fixtures.csv"
 
-league = sys.argv[1] if len(sys.argv) > 1 else DEFAULT
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+dry_run = "--dry-run" in sys.argv
+league = args[0] if args else DEFAULT
+if league not in LEAGUES:
+    sys.exit(f"Unknown league '{league}'. Choose one of: {', '.join(LEAGUES)}")
 cfg = LEAGUES[league]
-LOG_PATH = cfg["log"]
-state = train(league)
-current = state["current"]
-print("league:", league, cfg["name"])
+log_path = cfg["log"]
 
-# 1. Fixtures
-fx = pd.read_csv("data/fixtures.csv")
+now_utc = datetime.now(timezone.utc)
+print(f"league: {league} {cfg['name']} | now (UTC): {now_utc:%Y-%m-%d %H:%M} "
+      f"| mode: {'DRY RUN (nothing is written)' if dry_run else 'write'}")
+
+# 1. Fixtures for this league, kept as text. Parsing happens in prediction_log.
+fx = pd.read_csv(FIXTURES_PATH, dtype=str, keep_default_na=False)
 if "Div" in fx.columns:
     fx = fx[fx["Div"] == league]
-fx = fx.dropna(subset=["Date", "HomeTeam", "AwayTeam"]).copy()
-fx["Date"] = pd.to_datetime(fx["Date"], dayfirst=True)
+if "Time" not in fx.columns:
+    fx["Time"] = ""
+fixtures = fx[["Date", "Time", "HomeTeam", "AwayTeam"]].to_dict("records")
 
-# 2. Jo matches already khele ja chuke, unhe hata do
-played = pd.read_csv(cfg["matches"], parse_dates=["Date"])
-played_keys = set(zip(played["Date"], played["HomeTeam"], played["AwayTeam"]))
-fx = fx[[(d, h, a) not in played_keys for d, h, a in zip(fx["Date"], fx["HomeTeam"], fx["AwayTeam"])]]
+# 2. Matches that already have a result
+res = pd.read_csv(cfg["matches"], usecols=["Date", "HomeTeam", "AwayTeam", "FTR"],
+                  dtype=str, keep_default_na=False)
+res = res[res["FTR"].isin(["H", "D", "A"])]
+played_keys = {(d[:10], h, a) for d, h, a in zip(res["Date"], res["HomeTeam"], res["AwayTeam"])}
 
-# 2b. Guard: sirf aaj ya aage ke matches
-today = pd.Timestamp.today().normalize()
-stale = fx[fx["Date"] < today]
-if len(stale):
-    print(f"skip {len(stale)} past fixtures not yet in results:",
-          list(zip(stale["HomeTeam"], stale["AwayTeam"])))
-fx = fx[fx["Date"] >= today]
+# 3. Existing log (must already be on the new schema)
+header, existing = pl.read_log(log_path)
+if existing and header != pl.COLUMNS:
+    sys.exit("The prediction log still has the old columns. Run once: python migrate_log.py")
 
-# 3. Predict
-rows = []
-for r in fx.itertuples():
-    if r.HomeTeam not in current or r.AwayTeam not in current:
-        print("skip (naam nahi mila):", r.HomeTeam, "vs", r.AwayTeam)
-        continue
-    p = predict_match(state, r.HomeTeam, r.AwayTeam)
-    rows.append({
-        "Date": r.Date.date(), "HomeTeam": r.HomeTeam, "AwayTeam": r.AwayTeam,
-        "pH": round(p["H"], 4), "pD": round(p["D"], 4), "pA": round(p["A"], 4),
-        "model": MODEL_VERSION,
-        "logged_on": pd.Timestamp.today().date(),
-    })
+# 4. Model and plan
+state = train(league)
+plan = pl.plan_predictions(
+    fixtures, existing, played_keys, state["current"],
+    lambda home, away: predict_match(state, home, away),
+    now_utc, MODEL_VERSION, local_date=datetime.now().date().isoformat(),
+)
 
-if not rows:
-    print("No new fixtures to log for this league.")
-    sys.exit(0)
+# 5. Report
+counts = Counter(reason.split(":")[0] for _, reason in plan.skipped)
+print(f"\nfixtures read: {len(fixtures)} | to log: {len(plan.new_rows)} | skipped: {dict(counts)}")
+for label, reason in plan.skipped:
+    if reason.split(":")[0] in ("too_late", "unknown_team", "malformed", "bad_date",
+                                "model_error", "bad_probs"):
+        print(f"  skip [{reason}] {label}")
+for w in plan.warnings:
+    print("  WARNING:", w)
 
-new = pd.DataFrame(rows)
+if plan.new_rows:
+    show = pd.DataFrame(plan.new_rows)[["Date", "HomeTeam", "AwayTeam", "pH", "pD", "pA", "kickoff_utc"]]
+    print("\n" + show.to_string(index=False))
 
-# 4. Purane log ke saath jodo, purani prediction KABHI overwrite nahi (keep="first")
-if os.path.exists(LOG_PATH):
-    old = pd.read_csv(LOG_PATH)
-    new = pd.concat([old, new], ignore_index=True)
-new["Date"] = new["Date"].astype(str)
-new = new.drop_duplicates(subset=["Date", "HomeTeam", "AwayTeam"], keep="first")
-new.to_csv(LOG_PATH, index=False)
-
-print(new.tail(15))
-print("total logged:", len(new))
+# 6. Write (append only)
+if dry_run:
+    print("\nDRY RUN: nothing written.")
+elif plan.new_rows:
+    pl.append_rows(log_path, plan.new_rows)
+    print(f"\nappended {len(plan.new_rows)} rows to {log_path}")
+else:
+    print("\nNo new predictions to log.")
+print("total logged:", len(pl.read_log(log_path)[1]))

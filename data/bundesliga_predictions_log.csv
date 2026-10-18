@@ -1,3 +1,3 @@
-Date,HomeTeam,AwayTeam,pH,pD,pA,model,logged_on
-2026-10-18,Leverkusen,Freiburg,0.5166,0.2548,0.2286,elo_sot10 K30 HA75 NEW1400,2026-10-18
-2026-10-18,M'gladbach,Hoffenheim,0.302,0.2702,0.4278,elo_sot10 K30 HA75 NEW1400,2026-10-18
+Date,HomeTeam,AwayTeam,pH,pD,pA,model,logged_on,kickoff_utc,predicted_at_utc
+2026-10-18,Leverkusen,Freiburg,0.5166,0.2548,0.2286,elo_sot10 K30 HA75 NEW1400,2026-10-18,,
+2026-10-18,M'gladbach,Hoffenheim,0.302,0.2702,0.4278,elo_sot10 K30 HA75 NEW1400,2026-10-18,,
