@@ -4,12 +4,15 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from data import load_matches, current_teams
 from elo import add_elo_features
-from shots import add_sot_feature, team_shots_form, SCALE
+from shots import add_sot_feature, team_shots_form, SCALE, WINDOW
 from leagues import LEAGUES, DEFAULT
 
 # Final config: Elo (K=30, HA=75, NEW=1400) + rolling-10 shots-on-target net diff
 K, HOME_ADV, NEW_START = 30, 75, 1400
 FEATURES = ["elo_diff", "sot_diff"]
+
+# Label written to the prediction log. Built from the settings above so it cannot drift from the model.
+MODEL_VERSION = f"elo_sot{WINDOW} K{K} HA{HOME_ADV} NEW{NEW_START}"
 
 
 def train(league=DEFAULT, df=None):

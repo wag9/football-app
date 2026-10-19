@@ -10,9 +10,8 @@ import pandas as pd
 
 import prediction_log as pl
 from leagues import LEAGUES, DEFAULT
-from model import train, predict_match
+from model import train, predict_match, MODEL_VERSION
 
-MODEL_VERSION = "elo_sot10 K30 HA75 NEW1400"
 FIXTURES_PATH = "data/fixtures.csv"
 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]

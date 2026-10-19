@@ -28,10 +28,14 @@ def add_sot_feature(df):
 
 
 def team_shots_form(df):
-    """Latest rolling-10 net SoT per team (includes the most recent match) for upcoming fixtures."""
+    """Rolling-10 net SoT per team for the NEXT match (includes the most recent match).
+
+    Must equal what add_sot_feature computes for a new row appended to df: take the last
+    WINDOW matches, average the ones that have shots data, require at least MIN_PERIODS of them.
+    """
     st = _team_log(df)
     form = {}
     for team, g in st.groupby("Team"):
-        last = g["net"].dropna().tail(WINDOW)
-        form[team] = float(last.mean()) if len(last) >= MIN_PERIODS else np.nan
+        valid = g["net"].tail(WINDOW).dropna()      # same as rolling(window=WINDOW, min_periods=MIN_PERIODS)
+        form[team] = float(valid.mean()) if len(valid) >= MIN_PERIODS else np.nan
     return form
