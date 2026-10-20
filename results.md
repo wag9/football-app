@@ -53,7 +53,7 @@ Removed in a follow-up commit (rule: logged_on must be <= match date); the earli
 ## Poisson attack/defence (independent goals, halflife 730d, refit 28d)
 alpha 0.003: 0.9929 | 0.01: 0.9955 | 0.03: 1.0037 (Elo: 0.9831)
 Folds (alpha 0.003): [0.9324, 1.0138, 1.0326]. Equal to Elo in folds 1 and 3, much worse in fold 2 (+0.029).
-Draw max 0.315 at alpha 0.003. Fold 3 had 380 rows vs 374 (row-set mismatch).
+Draw max 0.315 at alpha 0.003. Test rows per fold 374 / 374 / 380 (same rows as the Elo comparison).
 Result: worse than Elo, not adopted.
 
 ## Elo + rolling-10 shots-on-target net diff (data 2003+)
@@ -94,3 +94,7 @@ Sample weights by age, halflife 3y / 6y vs equal weights. Pooled avg log loss: 0
 Folds improved: 8 of 15 / 9 of 15. Below the 0.003 threshold, not adopted.
 Home/away bias shrinks (home gap 0.026 -> 0.011, away 0.024 -> 0.007 at 3y), consistent with a decline in home advantage over the history, but the log-loss effect is tiny.
 Per league (3y): F1 -0.0039, I1 -0.0039, E0 -0.0016, D1 +0.0008, SP1 +0.0014.
+
+## Notes added after the Stage 3 audit
+- Row sets: Premier League numbers above use the 8,591 rows that remain after dropping rows without rolling-form features (main.py). La Liga, Bundesliga, Serie A and Ligue 1 numbers use all rows (the production path). Checked by re-running: Premier League on all rows gives Elo 0.9826 / Elo + SoT 0.9774 (vs 0.9831 / 0.9776); La Liga on main.py rows gives 0.9751 / 0.9720 (vs 0.9727 / 0.9693). The SoT gain has the same sign and similar size either way.
+- Live log, Premier League: the first 10 predictions (10 Oct) come from Elo-only trained on 2019+ data; the next 10 (17-19 Oct, label "hist0304") from Elo-only trained on the full 2003+ history. Recomputing the logged probabilities from the data reproduces both batches exactly, so they are different models and are scored separately. From the next weekly run the Premier League is logged with Elo + SoT10, like the other four leagues.
