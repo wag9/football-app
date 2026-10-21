@@ -45,11 +45,13 @@ for s in seasons:
     d["Date"] = pd.to_datetime(d["Date"], dayfirst=True, format="mixed")
     d["season"] = s
     print(d.shape, "NaT:", d["Date"].isna().sum(), "| odds:", odds_used,
-          "| HST missing:", d["HST"].isna().sum()),"| HC missing:", d["HC"].isna().sum()
+          "| HST missing:", d["HST"].isna().sum(), "| HC missing:", d["HC"].isna().sum())
     frames.append(d)
 
 all_matches = pd.concat(frames, ignore_index=True)
-all_matches = all_matches.sort_values("Date").reset_index(drop=True)
+# Sort on all three keys: sorting on Date alone is not stable, so matches on the same date
+# were shuffled every time rows were added (huge, meaningless git diffs). Model output is unaffected.
+all_matches = all_matches.sort_values(["Date", "HomeTeam", "AwayTeam"]).reset_index(drop=True)
 print(all_matches.shape)
 print("teams:", all_matches["HomeTeam"].nunique())
 all_matches.to_csv("data/all_matches.csv", index=False)

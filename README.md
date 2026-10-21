@@ -45,22 +45,34 @@ Predictions are written to `data/predictions_log.csv` before kickoff and
 never overwritten. Results are compared against the bookmaker.
 
 ## Weekly workflow
-1. After a matchweek: download the latest `prem2627.csv` from football-data.co.uk into `data/`.
-2. `python combine.py` rebuilds `data/all_matches.csv`.
-3. `python check.py` scores earlier predictions against actual results.
-4. Before the next matchweek: update `data/fixtures.csv`, then run `python upcoming.py` to log new predictions.
-5. Commit and push the updated CSVs; the host redeploys and retrains automatically.
+1. `python weekly.py` downloads the fixtures and the current season's results for all five leagues, rebuilds the match tables, runs the data checks (`audit_data.py`), scores earlier predictions (`check.py`) and logs predictions for upcoming fixtures (`upcoming.py`). Use `python weekly.py E0 SP1` for selected leagues and `--no-download` to reuse the files already in `data/`.
+2. Read the summary table at the end. If it says `NOTHING UPDATED` or `PARTIAL`, do not commit blindly. A league whose data fails the checks gets no new predictions logged.
+3. Look at `git status` and `git diff --stat`, then `git add data/`, commit and push before the next kickoff. The host redeploys and retrains automatically.
+4. Every August (new season): change `CURRENT_SEASON` in `weekly.py` and the season range in `combine.py` and `combine_league.py`.
 
 ## Limitations
 - The model trails bookmaker odds, which include lineups and injuries.
-- Draw probability never exceeds ~27%, so draws are never the top pick.
+- In every pairing of current teams in all five leagues (October 2026) the draw probability stays below 31% (highest value per league: 27-31%) and is never the most likely outcome, so draws are never the top pick.
 - Pooled over five leagues (5,256 test matches), the model over-predicts home wins by about 2.6 points and under-predicts away wins by about 2.4 points. Draw rates are well calibrated.
 - Model-vs-bookmaker gap is about 0.012 (Premier League) and 0.014 (La Liga).
 - The model trails bookmakers by about 0.012-0.014 in the Premier League and La Liga and about 0.022 in the other three leagues.
 
 ## Run locally
 ```
-pip install -r requirements.txt
+pip install -r requirements.txt          # enough to run the API
+pip install -r requirements-dev.txt      # also needed for weekly.py (requests) and the Poisson experiment (scipy)
+```
+Start the API from the repository root, because it reads `data/` with relative paths:
+```
 uvicorn api:app --reload
 ```
-Then open `index.html` in your browser.
+In a second terminal, serve the pages:
+```
+python -m http.server 3000
+```
+Then open http://localhost:3000. Do not open `index.html` by double-clicking it: a page loaded from `file://` is not an allowed CORS origin, so the browser blocks its calls to the API. The allowed origins are `https://wag9.github.io`, `http://localhost:3000` and `http://127.0.0.1:3000`. On localhost the pages talk to the API at `http://127.0.0.1:8000`.
+
+## Tests
+```
+python -m unittest
+```
