@@ -54,7 +54,6 @@ async function loadTeams() {
   const res = await fetch(`${API}/?${Q}`);
   const data = await res.json();
   if (!res.ok) { document.getElementById("status").textContent = data.detail || "League not found."; return; }
-    map(l => `<option value="${l.code}" ${l.code === LEAGUE ? "selected" : ""}>${l.name}</option>`).join("");
   const cur = data.leagues.find(l => l.code === LEAGUE);
   if (cur) { document.getElementById("title").textContent = cur.name; document.title = cur.name; }
   for (const id of ["home", "away"]) {
