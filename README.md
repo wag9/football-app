@@ -1,4 +1,4 @@
-# Premier League Match Predictor
+# Football Match Predictor
 
 Live demo: https://wag9.github.io/football-app/
 
@@ -24,8 +24,9 @@ Walk-forward validation, test seasons 2023/24 to 2025/26 (3 folds). Multiclass l
 
 - Same configuration in every league (K=30, home advantage 75, promoted-team start 1400), no per-league tuning.
 - The shots-on-target feature improved 14 of 15 folds across the five leagues (the one exception was flat).
-- The Elo and Elo + shots numbers were reproduced from the data for every league in an earlier audit. The bookmaker and gap columns come from the experiment log ([results.md](results.md)) and were not re-run for this README.
+- The Elo and Elo + shots numbers were reproduced from the data for every league in an earlier audit. All columns were reproduced from the data (Elo, shots form, baseline, bookmaker, gap). The Premier League row uses the 8,591 matches that main.py keeps; on all 8,800 matches it is 1.0744 / 0.9826 / 0.9774 / 0.9650 (gap 0.012). The other four leagues use all matches.
 - **Caveat:** K, home advantage and the other settings were chosen by looking at these same test folds. The reported scores are therefore a little optimistic. The size of this effect has not been measured.
+- The shots feature gain is -0.0042 log loss pooled over the 5,256 test matches (paired SE 0.0011, 95% CI -0.0063 to -0.0021). Per league it is 1.3 to 2.2 standard errors, and no single fold is significant on its own.
 
 ## Approach
 
@@ -42,7 +43,7 @@ Tested in [results.md](results.md) and found flat or worse: longer training hist
 
 ## Live prediction log
 
-Predictions are written to `data/<league>_predictions_log.csv` before kickoff and are never overwritten. Each row records the time it was made, and a row logged after kickoff is marked as a timing violation and is not scored. Results are compared against the bookmaker where odds exist.
+Predictions are written to data/predictions_log.csv (Premier League) and data/<league>_predictions_log.csv (the other four leagues) before kickoff, and are never overwritten. Newer rows record when they were made and the kickoff time; a row logged after kickoff is marked as a timing violation and is not scored. Older rows only have a log date and are scored separately as legacy. Results are compared against the bookmaker where odds exist.
 
 ## Weekly workflow
 
