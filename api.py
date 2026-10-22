@@ -72,10 +72,10 @@ def predict(home: str, away: str, league: str = DEFAULT):
 
 
 @app.get("/table")
-def table(season: Optional[int] = None, league: str = DEFAULT):
+def table(season: Optional[str] = None, league: str = DEFAULT):
     st = get_state(league)
     if season is None:
-        season = int(st["df"]["season"].max())
+        season = st["df"]["season"].max()   # text, e.g. "2627"
     t = league_table(st["df"], season).reset_index()
     t = t.rename(columns={"index": "Pos"})
     return t.to_dict(orient="records")

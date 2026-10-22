@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def league_table(df, season):
-    s = df[df["season"] == season]
+    s = df[df["season"].astype(str) == str(season)]
 
     # Har match ki 2 rows: ek home team ki, ek away team ki
     home = pd.DataFrame({

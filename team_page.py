@@ -27,7 +27,7 @@ def team_summary(state, name):
     if name not in current:
         raise ValueError(f"Unknown team: {name}")
 
-    season = int(df["season"].max())
+    season = df["season"].max()   # text, e.g. "2627"
 
     # --- Elo rank among current teams ---
     order = sorted(current, key=lambda t: ratings[t], reverse=True)
