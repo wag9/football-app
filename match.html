@@ -106,10 +106,18 @@ async function load() {
       s.className = c; s.style.width = (v * 100) + "%";
       bar.appendChild(s);
     });
-    document.getElementById("pickinfo").textContent = d.logged
-      ? `Locked prediction (${d.logged.model || "model n/a"}, logged ${d.logged.logged_on || "n/a"}). Home / Draw / Away.`
-      : (d.result ? "Estimate uses current ratings (after this match). Home / Draw / Away."
-                  : "Current model estimate, not locked yet. Home / Draw / Away.");
+    const legend = "Home / Draw / Away, model probabilities.";
+    let info;
+    if (d.logged && d.result) {
+      info = `Match finished ${d.result}.`;
+    } else if (d.logged) {
+      info = "Waiting for the result.";
+    } else if (d.result) {
+      info = "Finished match. Probabilities use the ratings as they stand now, not the ones before kickoff, so they are not a fair test.";
+    } else {
+      info = "Current model estimate, not locked yet.";
+    }
+    document.getElementById("pickinfo").textContent = info + " " + legend;
 
     const cards = document.getElementById("cards");
     [[`${d.home} Elo`, `${d.elo_home} (#${d.rank_home})`],
