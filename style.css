@@ -28,4 +28,4 @@ select, button { padding:6px; margin-right:6px; }
 .topnav { display:flex; gap:14px; flex-wrap:wrap; align-items:center; padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid #262b36; font-size:.95rem; }
 .topnav .brand { font-weight:700; color:#e6e6e6; margin-right:8px; }
 .topnav a.active { color:#e6e6e6; border-bottom:2px solid #6ea8fe; }
-.topnav a.tr-link { margin-left: 6px; padding-left: 14px; border-left: 1px solid #262b36; }
+.topnav a.tr-link { margin-left: 10px; }
