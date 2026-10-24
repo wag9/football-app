@@ -145,8 +145,7 @@ async function loadWeek() {
              <td><a href="index.html?league=${r.league}">${r.league_name}</a></td>
              <td class="team">${tlx(r.home, r.league)} vs ${tlx(r.away, r.league)}</td>
              ${cell("home")}${cell("draw")}${cell("away")}
-             <td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}&league=${r.league}">Details</a></td></tr>`;
-  }
+             <td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}&league=${r.league}">View</a></td></tr>`;  }
   document.getElementById("week").innerHTML =
     rows.length ? html : "<tr><td>No upcoming matches logged yet.</td></tr>";
 }
