@@ -1,6 +1,8 @@
 # api.py
 import os
 import threading
+from datetime import date
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
@@ -8,10 +10,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from leagues import LEAGUES, DEFAULT
-from model import train, predict_match
+from model import train, predict_match, MODEL_VERSION
 from table import league_table
 from team_page import team_summary
 from match_page import match_summary
+import evaluation as ev
+import prediction_log as pl
+from track_record import build as build_track_record
 
 
 app = FastAPI(title="Football Predictor")
@@ -138,6 +143,20 @@ def match(home: str, away: str, date: Optional[str] = None, league: str = DEFAUL
         return match_summary(get_state(league), home, away, date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/track-record")
+def track_record(league: str = DEFAULT, model: Optional[str] = None):
+    """Prospective, verified predictions only. Rules live in track_record.py."""
+    if league not in LEAGUES:
+        raise HTTPException(status_code=404,
+                            detail=f"Unknown league '{league}'. Available: {sorted(LEAGUES)}")
+    cfg = LEAGUES[league]
+    if not (os.path.exists(cfg["log"]) and os.path.exists(cfg["matches"])):
+        raise HTTPException(status_code=404,
+                            detail=f"No prediction log or results for {cfg['name']} yet.")
+    _, rows = pl.read_log(Path(cfg["log"]))
+    outcomes, odds, conflicts = ev.load_results(Path(cfg["matches"]))
+    return build_track_record(rows, outcomes, odds, conflicts, date.today(), model or MODEL_VERSION)
 
 @app.get("/upcoming")
 def upcoming_all(days: int = 7):

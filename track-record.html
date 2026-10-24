@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track record</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+  .card { background:#171a21; border:1px solid #262b36; border-radius:10px; padding:12px 16px; min-width:130px; }
+  .card .v { font-size:1.4rem; font-weight:600; }
+  .card .s { font-size:.85rem; color:#9aa4b2; margin-top:2px; }
+  .note { background:#171a21; border-left:3px solid #6ea8fe; padding:10px 14px; margin:16px 0; color:#c9d1d9; }
+  .warn { background:#2a2414; border-left:3px solid #facc15; padding:10px 14px; margin:16px 0; display:none; }
+  #status { margin-top:16px; }
+</style>
+</head>
+<body>
+  <script src="nav.js"></script>
+  <a class="back" href="index.html">&larr; Back</a>
+  <h1>Track record</h1>
+  <div class="muted" id="sub"></div>
+
+  <div class="note">
+    Only predictions logged before kickoff and checked against the final result are counted here.
+    Older predictions (logged without timestamps) and other model versions are not included.
+    This is a research project, not betting advice.
+  </div>
+
+  <div id="status" class="muted">Loading... (the first request can take ~30s while the free server wakes up)</div>
+
+  <div id="content" style="display:none">
+    <div class="warn" id="warning"></div>
+    <div class="cards" id="cards"></div>
+
+    <h2>Against the bookmaker</h2>
+    <p id="bookmaker" class="muted"></p>
+
+    <h2>Scored matches</h2>
+    <p id="other" class="muted"></p>
+    <div style="overflow-x:auto"><table id="matches"></table></div>
+  </div>
+
+<script>
+const LOCAL = ["127.0.0.1", "localhost", ""].includes(location.hostname);
+const API = LOCAL ? "http://127.0.0.1:8000" : "https://football-app-37ck.onrender.com";
+const LEAGUE = new URLSearchParams(location.search).get("league") || "E0";
+const Q = "league=" + encodeURIComponent(LEAGUE);
+document.querySelector("a.back").href = "index.html?" + Q;
+
+const RESULT = { H: "Home win", D: "Draw", A: "Away win" };
+const pct = x => Math.round(x * 100) + "%";
+const f4 = x => (x === null || x === undefined) ? "n/a" : x.toFixed(4);
+const signed = x => (x === null || x === undefined) ? "n/a" : (x > 0 ? "+" : "") + x.toFixed(4);
+
+function card(label, value, sub) {
+  const c = document.createElement("div");
+  c.className = "card";
+  c.innerHTML = `<div class="muted">${label}</div><div class="v"></div><div class="s"></div>`;
+  c.querySelector(".v").textContent = value;
+  c.querySelector(".s").textContent = sub;
+  return c;
+}
+
+function render(d) {
+  document.getElementById("sub").textContent = `Model: ${d.model} · evaluated ${d.evaluated_on}`;
+  const m = d.metrics;
+
+  const cards = document.getElementById("cards");
+  cards.innerHTML = "";
+  cards.append(
+    card("Logged before kickoff", String(d.logged), "prospective predictions"),
+    card("Scored", String(d.completed), "matches with a result"),
+    card("Waiting", String(d.waiting), "not played yet or no result"),
+    card("Top pick correct", m ? `${m.top_pick_hits}/${m.n}` : "n/a",
+         m ? pct(m.top_pick_accuracy) + " of scored matches" : "no scored matches yet"),
+    card("Log loss", f4(m ? m.logloss : null), `uniform guess ${f4(d.uniform_logloss)}, lower is better`),
+  );
+
+  const warn = document.getElementById("warning");
+  if (d.low_sample) {
+    warn.style.display = "block";
+    warn.textContent = `Only ${d.completed} scored match(es). The minimum before reading the numbers is ${d.min_matches}, so these are too early to conclude anything.`;
+  }
+
+  const b = d.bookmaker;
+  document.getElementById("bookmaker").textContent = b
+    ? `On the ${b.n} scored matches that have bookmaker odds: model log loss ${f4(b.model_logloss)}, bookmaker ${f4(b.bookmaker_logloss)}, difference ${signed(b.diff)} (standard error ${f4(b.diff_se)}; negative means the model did better).`
+    : "No bookmaker comparison yet, because no scored match has valid odds.";
+
+  document.getElementById("other").textContent = d.other_models.length
+    ? `Not included (other model labels in this league's log): ${d.other_models.join(", ")}.`
+    : "";
+
+  const t = document.getElementById("matches");
+  t.innerHTML = "";
+  const head = ["Date", "Match", "Home", "Draw", "Away", "Result", "Top pick"];
+  const hr = document.createElement("tr");
+  head.forEach(h => { const th = document.createElement("th"); th.textContent = h; hr.appendChild(th); });
+  t.appendChild(hr);
+
+  if (!d.matches.length) {
+    const r = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = head.length;
+    td.textContent = "No scored matches yet.";
+    r.appendChild(td);
+    t.appendChild(r);
+    return;
+  }
+  for (const x of d.matches) {
+    const r = document.createElement("tr");
+    [x.date, `${x.home} vs ${x.away}`, pct(x.prob.home), pct(x.prob.draw), pct(x.prob.away),
+     RESULT[x.result], x.top_pick_correct ? "✅" : "❌"].forEach(c => {
+      const td = document.createElement("td");
+      td.textContent = c;
+      r.appendChild(td);
+    });
+    t.appendChild(r);
+  }
+}
+
+async function load() {
+  const status = document.getElementById("status");
+  try {
+    const res = await fetch(`${API}/track-record?${Q}`);
+    const d = await res.json();
+    if (!res.ok) { status.textContent = d.detail || "Could not load the track record."; return; }
+    render(d);
+    status.style.display = "none";
+    document.getElementById("content").style.display = "block";
+  } catch (e) {
+    status.textContent = "Could not reach the server. Try again in a moment.";
+  }
+}
+load();
+</script>
+</body>
+</html>
