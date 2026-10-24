@@ -29,3 +29,10 @@ select, button { padding:6px; margin-right:6px; }
 .topnav .brand { font-weight:700; color:#e6e6e6; margin-right:8px; }
 .topnav a.active { color:#e6e6e6; border-bottom:2px solid #6ea8fe; }
 .topnav a.tr-link { margin-left: 10px; }
+
+#summary { margin: 10px 0 14px; line-height: 1.6; }
+#summary a { white-space: nowrap; }
+@media (max-width: 600px) {
+  #fixtures th, #fixtures td { white-space: nowrap; }
+  #fixtures td.team { white-space: normal; }
+}

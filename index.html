@@ -93,26 +93,43 @@ const startTab = location.hash.slice(1);
 showTab(["upcoming", "table", "week", "predict"].includes(startTab) ? startTab : "upcoming");
 
 async function loadUpcoming() {
-  const [fxRes, recRes] = await Promise.all([
-    fetch(`${API}/fixtures?status=upcoming&${Q}`),
-    fetch(`${API}/record?${Q}`),
-  ]);
-  const rows = (await fxRes.json()).slice(0, 10);     // next 10 only
-  const rec = await recRes.json();
+  const fixtures = document.getElementById("fixtures");
+  const summary = document.getElementById("summary");
+  try {
+    const [fxRes, trRes] = await Promise.all([
+      fetch(`${API}/fixtures?status=upcoming&${Q}`),
+      fetch(`${API}/track-record?${Q}`),
+    ]);
+    if (!fxRes.ok) throw new Error("fixtures " + fxRes.status);
+    const rows = (await fxRes.json()).slice(0, 10);     // next 10 only
+    const tr = trRes.ok ? await trRes.json() : null;
 
-  let html = "<tr><th>Date</th><th>Match</th><th>H</th><th>D</th><th>A</th><th></th></tr>";
-  for (const r of rows) {
-    const p = r.prob;
-    const top = Object.keys(p).reduce((a, b) => (p[a] >= p[b] ? a : b));
-    const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
-    html += `<tr><td>${r.date}</td><td class="team">${tl(r.home)} vs ${tl(r.away)}</td>
-             ${cell("home")}${cell("draw")}${cell("away")}
-             <td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}&${Q}">Details</a></td></tr>`;
+    let html = "<tr><th>Date</th><th>Match</th><th>Home</th><th>Draw</th><th>Away</th><th></th></tr>";
+    for (const r of rows) {
+      const p = r.prob;
+      const top = Object.keys(p).reduce((a, b) => (p[a] >= p[b] ? a : b));
+      const cell = (k) => `<td class="${k === top ? "top" : ""}">${Math.round(p[k] * 100)}%</td>`;
+      html += `<tr><td>${r.date}</td><td class="team">${tl(r.home)} vs ${tl(r.away)}</td>
+               ${cell("home")}${cell("draw")}${cell("away")}
+               <td><a href="match.html?home=${encodeURIComponent(r.home)}&away=${encodeURIComponent(r.away)}&date=${r.date}&${Q}">View</a></td></tr>`;
+    }
+    fixtures.innerHTML = rows.length
+      ? html
+      : "<tr><td>No upcoming matches logged yet for this league.</td></tr>";
+
+    if (tr && tr.metrics) {
+      summary.innerHTML =
+        `Prospective record: ${tr.completed} scored, top pick ${tr.metrics.top_pick_hits}/${tr.metrics.n}<br>` +
+        `<a href="track-record.html?${Q}">Track record</a> · <a href="predictions.html?${Q}">Full history</a> · ` +
+        `Research project, not betting advice.`;
+    } else {
+      summary.innerHTML =
+        `No scored predictions yet<br>` +
+        `<a href="track-record.html?${Q}">Track record</a> · Research project, not betting advice.`;
+    }
+  } catch (e) {
+    fixtures.innerHTML = "<tr><td>Could not load upcoming matches. Try refreshing in a moment.</td></tr>";
   }
-  document.getElementById("fixtures").innerHTML =
-    rows.length ? html : "<tr><td>No upcoming matches logged yet.</td></tr>";
-  document.getElementById("summary").innerHTML =
-    `Track record: ${rec.top_pick_correct}/${rec.played} top picks correct · <a href="predictions.html?${Q}">Full history</a>`;
 }
 
 async function loadWeek() {
