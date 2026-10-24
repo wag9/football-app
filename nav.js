@@ -11,6 +11,8 @@
   brand.textContent = "Football Predictor";
   nav.appendChild(brand);
 
+  const onTrackRecord = location.pathname.endsWith("track-record.html");
+
   LEAGUES.forEach(([code, name]) => {
     const a = document.createElement("a");
     a.href = "index.html?league=" + code;
@@ -18,5 +20,12 @@
     if (code === cur) a.className = "active";
     nav.appendChild(a);
   });
+
+  const tr = document.createElement("a");
+  tr.href = "track-record.html?league=" + cur;
+  tr.textContent = "Track record";
+  tr.className = "tr-link" + (onTrackRecord ? " active" : "");
+  nav.appendChild(tr);
+
   document.body.insertBefore(nav, document.body.firstChild);
 })();
