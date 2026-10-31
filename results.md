@@ -98,3 +98,11 @@ Per league (3y): F1 -0.0039, I1 -0.0039, E0 -0.0016, D1 +0.0008, SP1 +0.0014.
 ## Notes added after the Stage 3 audit
 - Row sets: Premier League numbers above use the 8,591 rows that remain after dropping rows without rolling-form features (main.py). La Liga, Bundesliga, Serie A and Ligue 1 numbers use all rows (the production path). Checked by re-running: Premier League on all rows gives Elo 0.9826 / Elo + SoT 0.9774 (vs 0.9831 / 0.9776); La Liga on main.py rows gives 0.9751 / 0.9720 (vs 0.9727 / 0.9693). The SoT gain has the same sign and similar size either way.
 - Live log, Premier League: the first 10 predictions (10 Oct) come from Elo-only trained on 2019+ data; the next 10 (17-19 Oct, label "hist0304") from Elo-only trained on the full 2003+ history. Recomputing the logged probabilities from the data reproduces both batches exactly, so they are different models and are scored separately. From the next weekly run the Premier League is logged with Elo + SoT10, like the other four leagues.
+
+## Selection-bias check (nested walk-forward, five leagues pooled, 2026-10-27)
+Grid: K {15,20,25,30,35,40,50} x home advantage {50,60,75,90,100} x SoT window {5,10,15,20} = 140 configs, NEW_START 1400.
+Tuned on folds 1-2 (2023/24, 2024/25), tested once on fold 3 (2025/26, 1,752 matches). Scores are match-weighted pooled log loss, not fold-mean averages.
+Folds 1-2: best 0.9777 (K=15, window 10; HA 50-100 tie to 4 decimals), original K30/HA75/w10 0.9794 (rank 61 of 140).
+Fold 3: tuned 0.9907, original 0.9936 (rank 63 of 140), median 0.9939. Tuned minus original -0.0029 (paired se 0.0016).
+SoT gain on fold 3: original -0.0043 (se 0.0018), tuned -0.0045 (se 0.0018). Window 5 / 10 / 15 / 20 at tuned K, HA: -0.0026 / -0.0045 / -0.0040 / -0.0043.
+Result: no sign that tuning K, home advantage and window inflated the reported scores. K=15 is the edge of the grid and the difference is within noise, so the live model is unchanged. Fold 3 had been seen before, so this reduces but cannot remove the bias.
