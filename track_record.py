@@ -66,3 +66,44 @@ def build(log_rows, outcomes, odds, conflicts, today: date, model: str):
         "matches": matches,
         "other_models": other_models,
     }
+
+def build_pooled(inputs, today: date, model: str):
+    """Same rules as build(), pooled over leagues.
+
+    inputs: {league_code: (log_rows, outcomes, odds, conflicts)}
+    Same model in every league, so pooling is allowed. Per-league numbers are returned too.
+    """
+    mine, leagues = [], []
+    for code, (rows, outcomes, odds, conflicts) in inputs.items():
+        entries, _ = ev.prepare(rows, outcomes, odds, conflicts, today)
+        part = [e for e in entries if e["model"] == model and e["stratum"] == HEADLINE_STRATUM]
+        mine += part
+        s = ev.summarize(part, scored=True)
+        m = s["metrics"]
+        leagues.append({"league": code, "logged": s["logged"], "completed": s["completed"],
+                        "logloss": None if m is None else _r(m["logloss"])})
+
+    s = ev.summarize(mine, scored=True)
+    m, b = s["metrics"], s["bookmaker"]
+    return {
+        "model": model,
+        "evaluated_on": today.isoformat(),
+        "logged": s["logged"],
+        "completed": s["completed"],
+        "waiting": s["upcoming"] + s["awaiting"] + s["overdue"],
+        "min_matches": ev.MIN_N,
+        "low_sample": s["completed"] < ev.MIN_N,
+        "uniform_logloss": _r(ev.UNIFORM_LOGLOSS),
+        "metrics": None if m is None else {
+            "n": m["n"], "top_pick_hits": m["hits"],
+            "top_pick_accuracy": _r(m["hits"] / m["n"]),
+            "logloss": _r(m["logloss"]), "logloss_se": _r(m["logloss_se"]),
+            "brier": _r(m["brier"]),
+        },
+        "bookmaker": None if b is None else {
+            "n": b["n"], "model_logloss": _r(b["model_logloss"]),
+            "bookmaker_logloss": _r(b["book_logloss"]),
+            "diff": _r(b["diff"]), "diff_se": _r(b["diff_se"]),
+        },
+        "leagues": leagues,
+    }

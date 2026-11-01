@@ -99,6 +99,29 @@ class TrackRecordTests(unittest.TestCase):
         self.assertEqual(out["logged"], 3)      
         self.assertEqual(out["completed"], 2)
 
+class PooledTests(unittest.TestCase):
+    def test_pools_two_leagues_and_keeps_per_league_counts(self):
+        a_rows = [prospective("2026-10-20", "A1", "A2", (0.6, 0.2, 0.2))]
+        b_rows = [prospective("2026-10-20", "B1", "B2", (0.5, 0.25, 0.25)),
+                  prospective("2026-10-30", "B3", "B4", (0.4, 0.3, 0.3))]   # not played
+        inputs = {
+            "AA": (a_rows, {("2026-10-20", "A1", "A2"): "H"}, {}, set()),
+            "BB": (b_rows, {("2026-10-20", "B1", "B2"): "A"}, {}, set()),
+        }
+        out = tr.build_pooled(inputs, TODAY, MODEL)
+        self.assertEqual(out["logged"], 3)
+        self.assertEqual(out["completed"], 2)
+        self.assertEqual(out["waiting"], 1)
+        self.assertTrue(out["low_sample"])
+        self.assertAlmostEqual(out["metrics"]["logloss"],
+                               (-math.log(0.6) - math.log(0.25)) / 2, places=4)
+        self.assertEqual([x["completed"] for x in out["leagues"]], [1, 1])
+
+    def test_empty(self):
+        out = tr.build_pooled({}, TODAY, MODEL)
+        self.assertEqual(out["completed"], 0)
+        self.assertIsNone(out["metrics"])
+
 
 if __name__ == "__main__":
     unittest.main()

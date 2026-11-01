@@ -159,7 +159,7 @@ async function load() {
       match.appendChild(teamLink(p.home));
       match.appendChild(document.createTextNode(" vs "));
       match.appendChild(teamLink(p.away));
-      row(preds, [p.date, match, pct(p.pH), pct(p.pD), pct(p.pA), p.score || "upcoming"]);
+      row(preds, [p.date, match, pct(p.pH), pct(p.pD), pct(p.pA), p.score || "waiting for result"]);
     });
 
     drawChart(d.history);

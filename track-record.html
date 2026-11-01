@@ -32,6 +32,9 @@
   <div id="content" style="display:none">
     <div class="warn" id="warning"></div>
     <div class="cards" id="cards"></div>
+    
+    <h2>All leagues pooled</h2>
+    <p id="pooled" class="muted"></p>
 
     <h2>Against the bookmaker</h2>
     <p id="bookmaker" class="muted"></p>
@@ -120,6 +123,25 @@ function render(d) {
   }
 }
 
+async function loadPooled() {
+  const el = document.getElementById("pooled");
+  try {
+    const res = await fetch(`${API}/track-record-all`);
+    if (!res.ok) { el.textContent = "Pooled numbers are not available right now."; return; }
+    const d = await res.json();
+    const m = d.metrics, b = d.bookmaker;
+    let t = `Same model in all five leagues, pooled: ${d.completed} scored, ${d.waiting} waiting. `;
+    if (m) t += `Top pick ${m.top_pick_hits}/${m.n}, log loss ${f4(m.logloss)} (standard error ${f4(m.logloss_se)}). `;
+    if (b) t += `Against the bookmaker on the ${b.n} matches with odds: model ${f4(b.model_logloss)}, bookmaker ${f4(b.bookmaker_logloss)}, difference ${signed(b.diff)} (standard error ${f4(b.diff_se)}; negative means the model did better). `;
+    t += d.low_sample
+      ? `Still under ${d.min_matches} scored matches, so too early to conclude anything.`
+      : `Matches within a round are not fully independent, so the standard error is somewhat optimistic.`;
+    el.textContent = t;
+  } catch (e) {
+    el.textContent = "Pooled numbers could not be loaded.";
+  }
+}
+
 async function load() {
   const status = document.getElementById("status");
   try {
@@ -127,6 +149,7 @@ async function load() {
     const d = await res.json();
     if (!res.ok) { status.textContent = d.detail || "Could not load the track record."; return; }
     render(d);
+    loadPooled();
     status.style.display = "none";
     document.getElementById("content").style.display = "block";
   } catch (e) {

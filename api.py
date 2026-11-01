@@ -16,7 +16,7 @@ from team_page import team_summary
 from match_page import match_summary
 import evaluation as ev
 import prediction_log as pl
-from track_record import build as build_track_record
+from track_record import build as build_track_record, build_pooled as build_track_record_pooled
 
 
 app = FastAPI(title="Football Predictor")
@@ -119,16 +119,6 @@ def fixtures(status: str = "all", league: str = DEFAULT):
         }
         for _, r in m.iterrows()
     ]
-
-
-@app.get("/record")
-def record(league: str = DEFAULT):
-    rows = fixtures(status="played", league=league)
-    keyOf = {"H": "home", "D": "draw", "A": "away"}
-    hits = sum(1 for r in rows if max(r["prob"], key=r["prob"].get) == keyOf[r["result"]])
-    return {"played": len(rows), "top_pick_correct": hits}
-
-
 @app.get("/team")
 def team(name: str, league: str = DEFAULT):
     try:
@@ -157,6 +147,18 @@ def track_record(league: str = DEFAULT, model: Optional[str] = None):
     _, rows = pl.read_log(Path(cfg["log"]))
     outcomes, odds, conflicts = ev.load_results(Path(cfg["matches"]))
     return build_track_record(rows, outcomes, odds, conflicts, date.today(), model or MODEL_VERSION)
+
+@app.get("/track-record-all")
+def track_record_all():
+    """Same rules as /track-record, pooled over all leagues (same model everywhere)."""
+    inputs = {}
+    for code, cfg in LEAGUES.items():
+        if not (os.path.exists(cfg["log"]) and os.path.exists(cfg["matches"])):
+            continue
+        _, rows = pl.read_log(Path(cfg["log"]))
+        outcomes, odds, conflicts = ev.load_results(Path(cfg["matches"]))
+        inputs[code] = (rows, outcomes, odds, conflicts)
+    return build_track_record_pooled(inputs, date.today(), MODEL_VERSION)
 
 @app.get("/upcoming")
 def upcoming_all(days: int = 7):
