@@ -1,5 +1,5 @@
 # Football Match Predictor
-
+![tests](https://github.com/wag9/football-app/actions/workflows/tests.yml/badge.svg)
 Live demo: https://wag9.github.io/football-app/
 
 > **Note:** the API runs on a free hosting tier, so the first request after a quiet period can take 30+ seconds while the server wakes up.
