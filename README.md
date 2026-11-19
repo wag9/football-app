@@ -59,6 +59,7 @@ Sample size matters. Below 30 completed matches, the page shows a warning, becau
 The same rules are implemented once in `track_record.py` and `evaluation.py`, and both the website and `check.py` use them, so the terminal and the site show the same numbers.
 
 This is a research project, not betting advice.
+For a short write-up of the approach, the validation and what I found, see the [case study](CASE_STUDY.md).
 
 ## Weekly workflow
 
