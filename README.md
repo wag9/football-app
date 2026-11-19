@@ -70,7 +70,7 @@ For a short write-up of the approach, the validation and what I found, see the [
 3. Check `git status` and `git diff --stat`, then `git add data/`, commit and push before the next kickoff.
 4. Every August (new season): change `CURRENT_SEASON` in `weekly.py`, and the season range in `combine.py` and `combine_league.py`.
 
-Deployment: the frontend calls the API on Render (`https://football-app-37ck.onrender.com`). Whether a push triggers a redeploy and retraining depends on the Render settings, which are not in this repository. Check the Render dashboard after a push.
+Deployment: the frontend calls the API on Render (`https://football-app-37ck.onrender.com`). Render redeploys automatically on every push to `main`, which retrains the models from the data in the repository. On the free tier the server sleeps after inactivity, so the first request can take around a minute.
 
 ## Limitations
 
