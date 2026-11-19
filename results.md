@@ -114,3 +114,11 @@ Self-check: current model pooled 0.9794 (folds 1-2) / 0.9936 (fold 3), identical
 Fold 3 minus current: ordered logit -0.0004 (se 0.0010, z -0.44; folds 1-2 +0.0006); gradient boosting +0.0059 (se 0.0023, z +2.56; folds 1-2 +0.0035, tuning data).
 Fold 3 diagnostics: all three models predict home wins at 0.454-0.455 vs 0.440 actual. Draw is never the top pick for the logistic and ordered models (0 of 1,752); gradient boosting picks it twice (max P(draw) 0.386).
 Result: neither passes the rule, the live model is unchanged. One held-out fold, seen before; two features only.
+
+## Recalibration of the home-win bias (nested, five leagues pooled, 2026-11-19)
+Method: fit the logistic model on all matches before the fold, then estimate a 3-value log-probability shift on the last W years (W = 1, 2, 3, pooled over the five leagues) so mean predicted A/D/H equals the actual frequencies, and apply it to the test fold. W chosen on folds 1-2 only; fold 3 tested once. Pre-registered rule: fold-3 z <= -2, gain >= 0.003, folds 1-2 also negative.
+Self-check: current model pooled 0.9794 (folds 1-2) / 0.9936 (fold 3).
+Chosen W=3. Fold 3 minus current: -0.0006 (se 0.0012, z -0.48); folds 1-2 -0.0022. W=1 +0.0011, W=2 -0.0000. Per league, fold 3: E0 -0.0008, SP1 +0.0040, D1 -0.0003, I1 -0.0064, F1 +0.0009.
+Fold 3 mean predicted A/D/H: current 0.291/0.255/0.454, recalibrated 0.311/0.253/0.436, actual 0.305/0.255/0.440.
+The home-win shift varied between -0.000 and -0.100 across folds and windows.
+Result: the correction removes the average bias but does not pass the rule and does not improve log loss. Live model unchanged.

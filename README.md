@@ -41,6 +41,7 @@ Walk-forward validation, test seasons 2023/24 to 2025/26 (3 folds). Multiclass l
 
 Tested in [results.md](results.md) and found flat or worse: longer training history, mean reversion of ratings between seasons, margin-of-victory Elo, extra rolling-form features, a draw-specific feature, a Poisson attack/defence model with time decay (avg log loss 0.9929 vs 0.9831 for Elo), and total shots and corners on top of shots on target (0.9774 / 0.9791 vs 0.9776). 
 An ordered logit and a gradient-boosted model on the same two features (neither beat the logistic regression in a nested check)
+A recent-window recalibration of the home-win bias
 
 ## Live prediction log
 
@@ -75,7 +76,7 @@ Deployment: the frontend calls the API on Render (`https://football-app-37ck.onr
 
 - The model trails bookmaker odds in every league, probably because odds include lineups and injuries, which the model does not see.
 - Draws: in every pairing of current teams in all five leagues, the draw probability stays below 31% (highest value per league: 27-31%), so a draw is never the most likely outcome and is never the top pick.
-- Calibration (pooled over five leagues, 5,256 test matches): home wins are over-predicted by about 2.6 points (mean predicted 0.456 vs actual 0.430), and away wins are under-predicted by about 2.4 points (0.290 vs 0.314). Draw rates are well calibrated.
+- Calibration (pooled over five leagues, 5,256 test matches): home wins are over-predicted by about 2.6 points (mean predicted 0.456 vs actual 0.430), and away wins are under-predicted by about 2.4 points (0.290 vs 0.314). Draw rates are well calibrated. A recent-window recalibration removed this average bias but did not improve log loss in a nested check (see results.md), so no correction is applied.
 - Selection bias: tested for K, home advantage and the SoT window (see Results), with no sign of inflation. Other design choices were made with the test seasons in view and were not tested this way, so the live log is the only fully clean evidence.
 - Small samples: a live log of a few dozen matches is noise. The check report warns when there are fewer than 30 completed matches.
 - Data: match results and odds come from football-data.co.uk. Some rows have missing odds or shots, and a few shot counts are impossible (shots on target above total shots). `audit_data.py` reports these.

@@ -55,10 +55,9 @@ Bugs I found and fixed along the way: a mismatch between how the shots feature w
 
 - Bookmaker odds include lineups and injuries, which the model never sees.
 - Draws are never the top pick, because the draw probability stays below about 31%.
-- Home wins are over-predicted by about 2.6 points. I measured this but have not applied a fix.
+- Home wins are over-predicted by about 2.6 points. A recalibration removed this average bias but did not improve log loss (nested check), so I left the model unchanged.
 - The live sample is small. Even at a few dozen matches, the standard error is larger than the usual gap to the bookmaker.
 
 ## What I would do next
 
-- Test a recalibration for the home-win bias, again nested.
 - Keep the live log running. It is the only fully clean test, and it gets stronger every week.
