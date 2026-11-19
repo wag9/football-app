@@ -106,3 +106,11 @@ Folds 1-2: best 0.9777 (K=15, window 10; HA 50-100 tie to 4 decimals), original 
 Fold 3: tuned 0.9907, original 0.9936 (rank 63 of 140), median 0.9939. Tuned minus original -0.0029 (paired se 0.0016).
 SoT gain on fold 3: original -0.0043 (se 0.0018), tuned -0.0045 (se 0.0018). Window 5 / 10 / 15 / 20 at tuned K, HA: -0.0026 / -0.0045 / -0.0040 / -0.0043.
 Result: no sign that tuning K, home advantage and window inflated the reported scores. K=15 is the edge of the grid and the difference is within noise, so the live model is unchanged. Fold 3 had been seen before, so this reduces but cannot remove the bias.
+
+## Model comparison: logistic vs ordered logit vs gradient boosting (nested, five leagues pooled, 2026-11-19)
+Same features (elo_diff, sot_diff; K30 HA75 NEW1400, SoT window 10), fitted per league, same three walk-forward folds. Pre-registered rule: fold-3 paired z <= -2 (and folds 1-2 also negative for ordered logit).
+Gradient boosting tuned on folds 1-2 only (24 configs: depth 2/3, learning rate 0.03/0.1, 50/150/300 iterations, min leaf 100/300); chosen depth 2, lr 0.03, 150 iterations, leaf 100.
+Self-check: current model pooled 0.9794 (folds 1-2) / 0.9936 (fold 3), identical to selection_bias.py.
+Fold 3 minus current: ordered logit -0.0004 (se 0.0010, z -0.44; folds 1-2 +0.0006); gradient boosting +0.0059 (se 0.0023, z +2.56; folds 1-2 +0.0035, tuning data).
+Fold 3 diagnostics: all three models predict home wins at 0.454-0.455 vs 0.440 actual. Draw is never the top pick for the logistic and ordered models (0 of 1,752); gradient boosting picks it twice (max P(draw) 0.386).
+Result: neither passes the rule, the live model is unchanged. One held-out fold, seen before; two features only.

@@ -26,6 +26,7 @@ I kept it simple on purpose: with about 1,750 test matches per season across fiv
 - The model beats the baseline clearly and trails the bookmaker in every league, by 0.012 to 0.022 log loss.
 - Adding shots on target helped a little: -0.0042 log loss pooled over 5,256 test matches (paired SE 0.0011, 95% CI -0.0063 to -0.0021). It improved 14 of 15 league-season folds, but no single fold is significant on its own.
 - Several ideas did not help and are logged in [results.md](results.md): longer history, mean reversion between seasons, margin-of-victory Elo, extra rolling features, a draw feature, a Poisson attack/defence model, total shots and corners.
+- An ordered logit and gradient boosting, compared with the same nested design, did not beat the logistic regression (gradient boosting was significantly worse on the held-out season).
 
 ## Checking my own bias
 
@@ -59,6 +60,5 @@ Bugs I found and fixed along the way: a mismatch between how the shots feature w
 
 ## What I would do next
 
-- Compare one more model class (for example gradient boosting or ordered logit) with the same nested design.
 - Test a recalibration for the home-win bias, again nested.
 - Keep the live log running. It is the only fully clean test, and it gets stronger every week.

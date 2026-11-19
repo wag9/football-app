@@ -39,7 +39,8 @@ Walk-forward validation, test seasons 2023/24 to 2025/26 (3 folds). Multiclass l
 
 ## What did not help
 
-Tested in [results.md](results.md) and found flat or worse: longer training history, mean reversion of ratings between seasons, margin-of-victory Elo, extra rolling-form features, a draw-specific feature, a Poisson attack/defence model with time decay (avg log loss 0.9929 vs 0.9831 for Elo), and total shots and corners on top of shots on target (0.9774 / 0.9791 vs 0.9776).
+Tested in [results.md](results.md) and found flat or worse: longer training history, mean reversion of ratings between seasons, margin-of-victory Elo, extra rolling-form features, a draw-specific feature, a Poisson attack/defence model with time decay (avg log loss 0.9929 vs 0.9831 for Elo), and total shots and corners on top of shots on target (0.9774 / 0.9791 vs 0.9776). 
+An ordered logit and a gradient-boosted model on the same two features (neither beat the logistic regression in a nested check)
 
 ## Live prediction log
 
